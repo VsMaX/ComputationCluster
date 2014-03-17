@@ -20,6 +20,7 @@ namespace ComputationTests
             server.StartListening();
 
             var problemRequest = new SolveRequestMessage();
+            
             string ip = "127.0.0.1:5679";
             client.Connect(ip);
             client.SendSolveRequest(problemRequest);

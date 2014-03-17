@@ -19,9 +19,4 @@ namespace Communication_Library
         [XmlElement]
         public string Data { get; set; }
     }
-
-    public abstract class ComputationMessage
-    {
-
-    }
 }
