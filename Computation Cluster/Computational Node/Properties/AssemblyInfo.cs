@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Computation Cluster")]
+[assembly: AssemblyTitle("Computational Node")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Computation Cluster")]
+[assembly: AssemblyProduct("Computational Node")]
 [assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("826c127b-fefa-453b-87ed-fb2d19b2d790")]
+[assembly: Guid("61ad3506-80b3-46c6-8b4e-c4f534198305")]
 
 // Version information for an assembly consists of the following four values:
 //

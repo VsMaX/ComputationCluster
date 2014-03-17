@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Computation_Cluster
+namespace Computational_Server
 {
-    /// <summary>
-    /// The task manager.
-    /// </summary>
-    public class TaskManager
+    class Program
     {
+        static void Main(string[] args)
+        {
+        }
     }
 }

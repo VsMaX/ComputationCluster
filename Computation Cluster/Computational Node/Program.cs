@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Computation_Cluster
+namespace Computational_Node
 {
     class Program
     {
