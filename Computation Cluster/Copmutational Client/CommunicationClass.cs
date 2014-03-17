@@ -18,15 +18,4 @@ namespace Copmutational_Client
             
         }
     }
-
-    public class Problem
-    {
-
-    }
-
-    [Serializable]
-    public class SolveRequestMessage
-    {
-        
-    }
 }

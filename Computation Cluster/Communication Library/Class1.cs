@@ -10,4 +10,15 @@ namespace Communication_Library
     {
         
     }
+
+    public class Problem
+    {
+
+    }
+
+    [Serializable]
+    public class SolveRequestMessage
+    {
+
+    }
 }
