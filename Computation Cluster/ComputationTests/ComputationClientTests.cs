@@ -19,14 +19,13 @@ namespace ComputationTests
 
             server.StartListening();
 
-            var problemRequest = new ProblemRequest();
+            var problemRequest = new SolveRequestMessage();
             string ip = "127.0.0.1:5679";
             client.Connect(ip);
+            client.SendSolveRequest(problemRequest);
             server.StopListening();
 
             //Assert.AreEqual(server.ProblemQueue.Count, 1);
         }
     }
-
-
 }
