@@ -10,6 +10,8 @@ namespace Computational_Server
     {
         static void Main(string[] args)
         {
+            Console.WriteLine();
+            var computationServer = new ComputationServer(5679);
         }
     }
 }

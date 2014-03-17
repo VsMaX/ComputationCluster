@@ -1,4 +1,7 @@
 ﻿using System;
+using Communication_Library;
+using Computational_Server;
+using Copmutational_Client;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ComputationTests
@@ -6,25 +9,24 @@ namespace ComputationTests
     [TestClass]
     public class ComputationClientTests
     {
-        private string computationServerIp = "127.0.0.1";
-        private string computationServerPort = "5679";
+        private int computationServerPort = 5679;
 
         [TestMethod]
-        public void SendProblemToCSTest()
+        public void CC_To_CS_Communication_Test()
         {
-            //var client = new ComputationClient();
-            //var server = new ComputationServer();
+            var client = new ComputationClient();
+            var server = new ComputationServer(computationServerPort);
 
-            //server.StartListening(computationServerIp, computationServerPort);
+            server.StartListening();
 
-            //var problemRequest = new ProblemRequest();
+            var problemRequest = new ProblemRequest();
+            string ip = "127.0.0.1:5679";
+            client.Connect(ip);
+            server.StopListening();
 
-            //client.SendProblemRequest(problemRequest);
-
-            //server.StopListening();
-
-            //Assert.AreEqual(server.ProblemQueue.Count(), 1);
-
+            //Assert.AreEqual(server.ProblemQueue.Count, 1);
         }
     }
+
+
 }

@@ -53,6 +53,27 @@
     <Compile Include="ComputationClientTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Communication Library\Communication Library.csproj">
+      <Project>{b4eff6fe-db52-4ecd-ac63-bee465e5bb66}</Project>
+      <Name>Communication Library</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Computational Node\Computational Node.csproj">
+      <Project>{8782acc2-738d-462f-98e6-c2acd6d4dae7}</Project>
+      <Name>Computational Node</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Computational Server\Computational Server.csproj">
+      <Project>{1942848c-9ea6-4c89-bf62-27926fcbb5fe}</Project>
+      <Name>Computational Server</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Copmutational Client\Computational Client.csproj">
+      <Project>{92093fc1-4285-437b-9d4b-ee15712509ac}</Project>
+      <Name>Computational Client</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

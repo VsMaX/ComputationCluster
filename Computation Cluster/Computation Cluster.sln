@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Computational Server", "Com
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Communication Library", "Communication Library\Communication Library.csproj", "{B4EFF6FE-DB52-4ECD-AC63-BEE465E5BB66}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Copmutational Client", "Copmutational Client\Copmutational Client.csproj", "{92093FC1-4285-437B-9D4B-EE15712509AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Computational Client", "Copmutational Client\Computational Client.csproj", "{92093FC1-4285-437B-9D4B-EE15712509AC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ComputationTests", "ComputationTests\ComputationTests.csproj", "{A7C01F6F-FF03-425E-B7FB-675855C5210B}"
 EndProject
