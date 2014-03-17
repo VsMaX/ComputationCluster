@@ -15,7 +15,7 @@ namespace Computational_Server
     {
         private int port;
         private object queueLock = new object();
-        private Queue<Problem> problemsQueue;
+        private Queue<SolveRequestMessage> solveRequestMessages;
         private AppServer appServer;
 
         public ComputationServer(int _port)
@@ -32,7 +32,6 @@ namespace Computational_Server
 
         public void StartListening()
         {
-
             Console.WriteLine();
 
             //Try to start the appServer

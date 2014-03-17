@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Communication_Library;
+using SuperSocket.SocketBase;
 
 namespace Copmutational_Client
 {
@@ -22,6 +23,7 @@ namespace Copmutational_Client
 
         public void Connect(string ip)
         {
+            AppSession appSession = new AppSession();
             throw new NotImplementedException();
         }
 
