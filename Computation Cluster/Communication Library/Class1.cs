@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Communication_Library
 {
-    public class Class1
+    public class CommunicationLibrary
     {
+        
     }
 }
