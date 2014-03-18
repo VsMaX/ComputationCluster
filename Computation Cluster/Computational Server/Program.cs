@@ -12,6 +12,9 @@ namespace Computational_Server
         {
             Console.WriteLine();
             var computationServer = new ComputationServer(5679);
+            computationServer.StartListening();
+            computationServer.StopListening();
+            Console.ReadKey();
         }
     }
 }

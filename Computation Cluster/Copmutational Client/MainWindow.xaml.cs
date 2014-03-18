@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Communication_Library;
 
 namespace Copmutational_Client
 {
@@ -23,6 +24,13 @@ namespace Copmutational_Client
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            var computationalClient = new ComputationClient();
+            computationalClient.Connect("127.0.0.1");
+            computationalClient.SendSolveRequest(new SolveRequestMessage());
         }
     }
 }
