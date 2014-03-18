@@ -61,7 +61,7 @@ namespace Copmutational_Client
             {
                 // Sending message 
                 //<Client Quit> is the sign for end of data 
-                string theMessageToSend = "dupa łłóóóżźźźż";
+                string theMessageToSend = "pierwsza wiadomość";
                 byte[] msg = Encoding.UTF8.GetBytes(theMessageToSend + "<Client Quit>");
 
                 // Sends data to a connected Socket. 
@@ -70,7 +70,7 @@ namespace Copmutational_Client
                 ReceiveDataFromServer();
             }
             catch (Exception exc) {
-                throw exc;
+               throw exc;
             }
         }
 
