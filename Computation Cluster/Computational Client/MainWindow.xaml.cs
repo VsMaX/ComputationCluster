@@ -14,7 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Communication_Library;
 
-namespace Copmutational_Client
+namespace Computational_Client
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

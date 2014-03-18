@@ -5,12 +5,12 @@ using System.Threading;
 using System.Text;
 using Communication_Library;
 
-namespace Copmutational_Client
+namespace Computational_Client
 {
     public class ComputationClient
     {
         Socket senderSock;
-        byte[] bytes = new byte[1024]; 
+        byte[] bytes = new byte[1024];
 
         public void Connect(string ip)
         {

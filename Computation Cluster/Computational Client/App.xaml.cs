@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Copmutational_Client
+namespace Computational_Client
 {
     /// <summary>
     /// Interaction logic for App.xaml

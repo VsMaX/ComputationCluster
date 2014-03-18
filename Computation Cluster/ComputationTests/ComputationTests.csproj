@@ -58,6 +58,10 @@
       <Project>{b4eff6fe-db52-4ecd-ac63-bee465e5bb66}</Project>
       <Name>Communication Library</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Computational Client\Computational Client.csproj">
+      <Project>{92093FC1-4285-437B-9D4B-EE15712509AC}</Project>
+      <Name>Computational Client</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Computational Node\Computational Node.csproj">
       <Project>{8782acc2-738d-462f-98e6-c2acd6d4dae7}</Project>
       <Name>Computational Node</Name>
@@ -65,10 +69,6 @@
     <ProjectReference Include="..\Computational Server\Computational Server.csproj">
       <Project>{1942848c-9ea6-4c89-bf62-27926fcbb5fe}</Project>
       <Name>Computational Server</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Copmutational Client\Computational Client.csproj">
-      <Project>{92093fc1-4285-437b-9d4b-ee15712509ac}</Project>
-      <Name>Computational Client</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

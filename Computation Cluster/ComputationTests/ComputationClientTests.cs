@@ -1,7 +1,7 @@
 ﻿using System;
 using Communication_Library;
 using Computational_Server;
-using Copmutational_Client;
+using Computational_Client;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ComputationTests

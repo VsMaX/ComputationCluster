@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Copmutational_Client.Properties
+namespace Computational_Client.Properties
 {
 
 
