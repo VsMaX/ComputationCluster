@@ -28,7 +28,7 @@ namespace Copmutational_Client
                 permission.Demand();
 
                 // Resolves a host name to an IPHostEntry instance            
-                IPHostEntry ipHost = Dns.GetHostEntry("");
+                IPHostEntry ipHost = Dns.GetHostEntry("127.0.0.1");
 
                 // Gets first IP address associated with a localhost 
                 IPAddress ipAddr = ipHost.AddressList[0];
@@ -61,8 +61,8 @@ namespace Copmutational_Client
             {
                 // Sending message 
                 //<Client Quit> is the sign for end of data 
-                string theMessageToSend = "dupa dupa";
-                byte[] msg = Encoding.Unicode.GetBytes(theMessageToSend + "<Client Quit>");
+                string theMessageToSend = "dupa łłóóóżźźźż";
+                byte[] msg = Encoding.UTF8.GetBytes(theMessageToSend + "<Client Quit>");
 
                 // Sends data to a connected Socket. 
                 int bytesSend = senderSock.Send(msg);
