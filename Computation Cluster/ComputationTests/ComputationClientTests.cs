@@ -42,25 +42,52 @@ namespace ComputationTests
         [TestMethod]
         public void CC_To_CS_Communication_Test()
         {
-            StartServer();
-
+            //ARRANGE
             var client = new ComputationClient();
-            
 
             var problemRequest = new SolveRequestMessage();
-            
             string ip = "127.0.0.1:5679";
+
+            //ACT
             client.Connect(ip);
             client.SendSolveRequest(problemRequest);
-            server.StopListening();
 
-            Assert.AreEqual(server.SolveRequests.Count, 1);
+            //ASSERT
+            //uwaga tu moze byc deadlock
+            Assert.AreEqual(server.GetUnfinishedTasks().Count, 1);
         }
 
         [TestMethod]
         public void CN_Register_To_CS_Test()
         {
             var computationalNode = new ComputationnalNode();
+
+            computationalNode.RegisterAtServer();
+
+            Assert.AreEqual(server.ActiveNodes.Count, 1);
+        }
+
+        [TestMethod]
+        public void CS_Send_Problem_To_Task_Manager()
+        {
+            
+        }
+
+        [TestMethod]
+        public void CN_Send_Solved_Subtask_To_CS()
+        {
+            
+        }
+
+        [TestMethod]
+        public void CS_Divide_Subtasks_Among_CNs()
+        {
+            
+        }
+
+        [TestMethod]
+        public void CS_Send_Solution_To_CC()
+        {
             
         }
     }

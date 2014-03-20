@@ -8,5 +8,9 @@ namespace Computational_Node
 {
     public class ComputationnalNode
     {
+        public void RegisterAtServer()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

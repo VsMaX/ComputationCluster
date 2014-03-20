@@ -14,18 +14,22 @@ namespace Computational_Server
     public class ComputationServer
     {
         private int port;
-        private object queueLock = new object();
-        public List<SolveRequestMessage> SolveRequests { get; set; } 
+        private object solveRequestMessagesLock = new object();
+
+        private Queue<SolveRequestMessage> solveRequestMessageQueue; 
+
+        public List<NodeEntry> ActiveNodes { get; set; }
 
         Socket handler;
 
         public ComputationServer(int _port)
         {
-            
+            solveRequestMessageQueue = new Queue<SolveRequestMessage>();
         }
 
         public void StartListening()
         {
+            //TODO przepisac ladnie i wydzielic mniejsze funkcje
             Socket sListener = null;
             IPEndPoint ipEndPoint = null;
             try
@@ -82,6 +86,9 @@ namespace Computational_Server
 
         private void AcceptCallback(IAsyncResult ar)
         {
+            //TODO przepisac ladnie i wydzielic mniejsze funkcje
+            //TODO tutaj powinna sie znajdowac logika odpowiadajaca za rozpoznawanie wiadomosci przychodzacych
+            //TODO kazda wiadomosc powinna miec swoja funkcje ktora ja obsluguje
             Console.WriteLine("Accepted callback");
             Socket listener = null;
 
@@ -122,10 +129,13 @@ namespace Computational_Server
 
         public void StopListening()
         {
+            throw new NotImplementedException();//TODO spr czy wystarczy zamknac nasliuchiwanie, zrobic dispose strumieni, usunac niepotrzebne obiekty
         }
 
         public void ReceiveCallback(IAsyncResult ar)
         {
+            //TODO przepisac ladnie i wydzielic mniejsze funkcje
+
             try
             {
                 // Fetch a user-defined object that contains information 
@@ -173,6 +183,14 @@ namespace Computational_Server
                 }
             }
             catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+        }
+
+        public IList<SolveRequestMessage> GetUnfinishedTasks()
+        {
+            lock (solveRequestMessagesLock)
+            {
+                return solveRequestMessageQueue.ToList();
+            }
         }
     }
 }
