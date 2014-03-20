@@ -15,7 +15,7 @@ namespace Computational_Server
     {
         private int port;
         private object queueLock = new object();
-        private Queue<SolveRequestMessage> solveRequestMessages;
+        public List<SolveRequestMessage> SolveRequests { get; set; } 
 
         Socket handler;
 
@@ -147,7 +147,7 @@ namespace Computational_Server
 
                 if (bytesRead > 0)
                 {
-                    content += Encoding.Unicode.GetString(buffer, 0,
+                    content += Encoding.UTF8.GetString(buffer, 0,
                         bytesRead);
 
                     // If message contains "<Client Quit>", finish receiving

@@ -67,7 +67,7 @@ namespace Computational_Client
                 // Sends data to a connected Socket. 
                 int bytesSend = senderSock.Send(msg);
 
-                ReceiveDataFromServer();
+                //ReceiveDataFromServer();
             }
             catch (Exception exc) {
                throw exc;
@@ -82,13 +82,13 @@ namespace Computational_Client
                 int bytesRec = senderSock.Receive(bytes);
 
                 // Converts byte array to string 
-                String theMessageToReceive = Encoding.Unicode.GetString(bytes, 0, bytesRec);
+                String theMessageToReceive = Encoding.UTF8.GetString(bytes, 0, bytesRec);
 
                 // Continues to read the data till data isn't available 
                 while (senderSock.Available > 0)
                 {
                     bytesRec = senderSock.Receive(bytes);
-                    theMessageToReceive += Encoding.Unicode.GetString(bytes, 0, bytesRec);
+                    theMessageToReceive += Encoding.UTF8.GetString(bytes, 0, bytesRec);
                 }
 
             }
