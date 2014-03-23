@@ -29,8 +29,10 @@ namespace Computational_Client
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             var computationalClient = new ComputationClient();
-            computationalClient.Connect("127.0.0.1");
+            computationalClient.Connect("192.168.1.24");
             computationalClient.SendSolveRequest(new SolveRequestMessage());
+            button1.ClickMode = ClickMode.Release;
+            label1.Content = computationalClient.ReceiveDataFromServer();
         }
     }
 }

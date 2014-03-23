@@ -16,7 +16,8 @@ namespace Computational_Server
         private int port;
         private object solveRequestMessagesLock = new object();
 
-        private Queue<SolveRequestMessage> solveRequestMessageQueue; 
+        private Queue<SolveRequestMessage> solveRequestMessageQueue;
+        private bool receivemsg = true;
 
         public List<NodeEntry> ActiveNodes { get; set; }
 
@@ -25,6 +26,7 @@ namespace Computational_Server
         public ComputationServer(int _port)
         {
             solveRequestMessageQueue = new Queue<SolveRequestMessage>();
+            port = _port;
         }
 
         public void StartListening()
@@ -40,7 +42,7 @@ namespace Computational_Server
                 var permission = new SocketPermission(
                     NetworkAccess.Accept, // Allowed to accept connections 
                     TransportType.Tcp, // Defines transport types 
-                    "127.0.0.1", // The IP addresses of local host 
+                    "192.168.1.24", // The IP addresses of local host 
                     SocketPermission.AllPorts // Specifies all ports 
                     );
 
@@ -48,13 +50,13 @@ namespace Computational_Server
                 permission.Demand();
 
                 // Resolves a host name to an IPHostEntry instance 
-                IPHostEntry ipHost = Dns.GetHostEntry("127.0.0.1");
+                IPHostEntry ipHost = Dns.GetHostEntry("192.168.1.24");
 
                 // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = ipHost.AddressList[0];
+                IPAddress ipAddr = ipHost.AddressList[3];
 
                 // Creates a network endpoint 
-                ipEndPoint = new IPEndPoint(ipAddr, 4510);
+                ipEndPoint = new IPEndPoint(ipAddr, 8001);
 
                 // Create one Socket object to listen the incoming connection 
                 sListener = new Socket(
@@ -129,7 +131,7 @@ namespace Computational_Server
 
         public void StopListening()
         {
-            throw new NotImplementedException();//TODO spr czy wystarczy zamknac nasliuchiwanie, zrobic dispose strumieni, usunac niepotrzebne obiekty
+            //throw new NotImplementedException();//TODO spr czy wystarczy zamknac nasliuchiwanie, zrobic dispose strumieni, usunac niepotrzebne obiekty
         }
 
         public void ReceiveCallback(IAsyncResult ar)
@@ -180,17 +182,53 @@ namespace Computational_Server
                     }
 
                     Console.WriteLine(content);
+                    string buff = "daddfad";
+                    byte[] bytes = Encoding.UTF8.GetBytes(buff);
+                    //byte[] bytes = new byte[buff.Length * sizeof(char)];
+                    //System.Buffer.BlockCopy(buff.ToCharArray(), 0, bytes, 0, bytes.Length);
+
+                    handler.BeginSend(bytes, 0, bytes.Length, 0,
+                            new AsyncCallback(SendCallback), handler);
                 }
             }
             catch (Exception ex) { Console.WriteLine(ex.ToString()); }
         }
 
+        public bool IfReceivedTask()
+        {
+         
+           return receivemsg;
+          
+        }
         public IList<SolveRequestMessage> GetUnfinishedTasks()
         {
+
             lock (solveRequestMessagesLock)
             {
                 return solveRequestMessageQueue.ToList();
             }
         }
+
+        private static void SendCallback(IAsyncResult ar)
+        {
+            try
+            {
+                // Retrieve the socket from the state object.
+                Socket handler = (Socket)ar.AsyncState;
+
+                // Complete sending the data to the remote device.
+                int bytesSent = handler.EndSend(ar);
+                Console.WriteLine("Sent {0} bytes to client.", bytesSent);
+
+                handler.Shutdown(SocketShutdown.Both);
+                handler.Close();
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+        }
+
     }
 }

@@ -28,13 +28,13 @@ namespace Computational_Client
                 permission.Demand();
 
                 // Resolves a host name to an IPHostEntry instance            
-                IPHostEntry ipHost = Dns.GetHostEntry("127.0.0.1");
+                IPHostEntry ipHost = Dns.GetHostEntry("192.168.1.24");
 
                 // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = ipHost.AddressList[0];
+                IPAddress ipAddr = ipHost.AddressList[3];
 
                 // Creates a network endpoint 
-                IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 4510);
+                IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 8001);
 
                 // Create one Socket object to setup Tcp connection 
                 senderSock = new Socket(
@@ -74,7 +74,7 @@ namespace Computational_Client
             }
         }
 
-        public void ReceiveDataFromServer()
+        public string ReceiveDataFromServer()
         {
             try
             {
@@ -90,7 +90,7 @@ namespace Computational_Client
                     bytesRec = senderSock.Receive(bytes);
                     theMessageToReceive += Encoding.UTF8.GetString(bytes, 0, bytesRec);
                 }
-
+                return theMessageToReceive;
             }
             catch (Exception exc) {
                 throw exc; 
