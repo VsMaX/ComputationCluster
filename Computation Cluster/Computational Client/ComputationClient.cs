@@ -28,13 +28,13 @@ namespace Computational_Client
                 permission.Demand();
 
                 // Resolves a host name to an IPHostEntry instance            
-                IPHostEntry ipHost = Dns.GetHostEntry("192.168.1.24");
+                //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.34");
 
                 // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = ipHost.AddressList[3];
+                IPAddress ipAddr = IPAddress.Parse("192.168.111.225");
 
                 // Creates a network endpoint 
-                IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 8001);
+                IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 3000);
 
                 // Create one Socket object to setup Tcp connection 
                 senderSock = new Socket(
@@ -55,13 +55,13 @@ namespace Computational_Client
 
         }
 
-        public void SendSolveRequest(SolveRequestMessage problemRequest)
+        public void SendSolveRequest(SolveRequestMessage msgg)
         {
             try
             {
                 // Sending message 
                 //<Client Quit> is the sign for end of data 
-                string theMessageToSend = "pierwsza wiadomość";
+                string theMessageToSend = msgg.Data;
                 byte[] msg = Encoding.UTF8.GetBytes(theMessageToSend + "<Client Quit>");
 
                 // Sends data to a connected Socket. 

@@ -47,7 +47,7 @@ namespace ComputationTests
 
             var problemRequest = new SolveRequestMessage();
             string ip = "192.168.1.24";
-
+            
             //ACT
             client.Connect(ip);
             client.SendSolveRequest(problemRequest);

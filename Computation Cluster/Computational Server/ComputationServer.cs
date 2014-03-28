@@ -42,7 +42,7 @@ namespace Computational_Server
                 var permission = new SocketPermission(
                     NetworkAccess.Accept, // Allowed to accept connections 
                     TransportType.Tcp, // Defines transport types 
-                    "192.168.1.24", // The IP addresses of local host 
+                    "192.168.110.38", // The IP addresses of local host 
                     SocketPermission.AllPorts // Specifies all ports 
                     );
 
@@ -50,13 +50,16 @@ namespace Computational_Server
                 permission.Demand();
 
                 // Resolves a host name to an IPHostEntry instance 
-                IPHostEntry ipHost = Dns.GetHostEntry("192.168.1.24");
+                //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.38");
+                string ip_string = "192.168.110.38";
 
+                //byte[] ip_byte = new byte[ip_string.Length * sizeof(char)];
+                //System.Buffer.BlockCopy(ip_string.ToCharArray(), 0, ip_byte, 0, ip_byte.Length);
                 // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = ipHost.AddressList[3];
+                IPAddress ipAddr = IPAddress.Parse(ip_string);
 
                 // Creates a network endpoint 
-                ipEndPoint = new IPEndPoint(ipAddr, 8001);
+                ipEndPoint = new IPEndPoint(ipAddr, 22222);
 
                 // Create one Socket object to listen the incoming connection 
                 sListener = new Socket(
@@ -182,7 +185,7 @@ namespace Computational_Server
                     }
 
                     Console.WriteLine(content);
-                    string buff = "daddfad";
+                    string buff = "Odebrałem wiadomość od Klienta";
                     byte[] bytes = Encoding.UTF8.GetBytes(buff);
                     //byte[] bytes = new byte[buff.Length * sizeof(char)];
                     //System.Buffer.BlockCopy(buff.ToCharArray(), 0, bytes, 0, bytes.Length);

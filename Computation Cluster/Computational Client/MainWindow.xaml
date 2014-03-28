@@ -3,8 +3,19 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow" Height="350" Width="525">
     <Grid>
-        <Button x:Name="button1" Content="Button" HorizontalAlignment="Left" Margin="67,78,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
-        <Label x:Name="label1" Content="Label" HorizontalAlignment="Left" Margin="232,159,0,0" VerticalAlignment="Top"/>
+        <Button x:Name="button1" Content="Wyślij wiadomość" HorizontalAlignment="Left" Margin="72,173,0,0" VerticalAlignment="Top" Width="109" Click="Button_Click"/>
+        <Label x:Name="label1" Content="Odebrane potwierdzenie&#xD;&#xA;" HorizontalAlignment="Left" Margin="369,31,0,0" VerticalAlignment="Top" RenderTransformOrigin="3.923,-4.13"/>
+        <TextBox x:Name="potwierdzenie" HorizontalAlignment="Left" Height="94" Margin="308,62,0,0" TextWrapping="Wrap" Text="Potwierdzenie od serwera" VerticalAlignment="Top" Width="165"/>
+        <TextBox x:Name="wiadomosc" HorizontalAlignment="Left" Height="96" Margin="43,62,0,0" TextWrapping="Wrap" Text="Wiadomość do wysłania" VerticalAlignment="Top" Width="166" RenderTransformOrigin="0.5,0.5">
+            <TextBox.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform AngleX="1.745"/>
+                    <RotateTransform/>
+                    <TranslateTransform X="1.462"/>
+                </TransformGroup>
+            </TextBox.RenderTransform>
+        </TextBox>
 
     </Grid>
 </Window>
