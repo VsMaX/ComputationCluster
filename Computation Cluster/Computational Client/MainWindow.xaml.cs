@@ -29,13 +29,19 @@ namespace Computational_Client
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             var computationalClient = new ComputationClient();
-            computationalClient.Connect("192.168.110.38");
-            string msg = wiadomosc.Text;
-            SolveRequestMessage msgs = new SolveRequestMessage();
-            msgs.Data = msg;
-            computationalClient.SendSolveRequest(msgs);
+            computationalClient.Connect("192.168.0.100");
+            //byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
+            //SolveRequest msgs = new SolveRequest();
+            //msgs.Data = msg;
+
+            SolveRequest sr = new SolveRequest()
+                { Data = null, ProblemType = "Ciężki problem", SolvingTimeout = 10000, SolvingTimeoutSpecified = true };
+            computationalClient.SendSolveRequest(sr);
+
+
             button1.ClickMode = ClickMode.Release;
-            potwierdzenie.Text = computationalClient.ReceiveDataFromServer();
+            SolveRequest sr2 = computationalClient.ReceiveDataFromServer();
+            potwierdzenie.Text = sr2.ProblemType.ToString() + " " + sr2.SolvingTimeout.ToString() + " ";
         }
     }
 }

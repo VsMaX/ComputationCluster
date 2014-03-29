@@ -11,9 +11,9 @@ namespace Communication_Library
     /// </summary>
     public abstract class ComputationMessage
     {
-        public int id;
-        public string title;
-        public string data;
+        private int id;
+        private string title;
+        private string data;
 
         public ComputationMessage() { }
 

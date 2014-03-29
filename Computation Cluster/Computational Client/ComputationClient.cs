@@ -31,10 +31,10 @@ namespace Computational_Client
                 //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.34");
 
                 // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = IPAddress.Parse("192.168.111.225");
+                IPAddress ipAddr = IPAddress.Parse("192.168.0.100");
 
                 // Creates a network endpoint 
-                IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 3000);
+                IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 22222);
 
                 // Create one Socket object to setup Tcp connection 
                 senderSock = new Socket(
@@ -55,17 +55,19 @@ namespace Computational_Client
 
         }
 
-        public void SendSolveRequest(SolveRequestMessage msgg)
+        public void SendSolveRequest(SolveRequest msgg)
         {
             try
             {
                 // Sending message 
                 //<Client Quit> is the sign for end of data 
-                string theMessageToSend = msgg.Data;
-                byte[] msg = Encoding.UTF8.GetBytes(theMessageToSend + "<Client Quit>");
+                var ser = new TestSerializeDeserialize();
+                string toSend = ser.Serialize(msgg);
 
+                byte[] theMessageToSend = Encoding.UTF8.GetBytes(toSend);
+                //byte[] msg = Encoding.UTF8.GetBytes(theMessageToSend.ToString() + "<Client Quit>");
                 // Sends data to a connected Socket. 
-                int bytesSend = senderSock.Send(msg);
+                int bytesSend = senderSock.Send(theMessageToSend);
 
                 //ReceiveDataFromServer();
             }
@@ -74,10 +76,12 @@ namespace Computational_Client
             }
         }
 
-        public string ReceiveDataFromServer()
+        public SolveRequest ReceiveDataFromServer()
         {
             try
             {
+                var ser = new TestSerializeDeserialize();
+
                 // Receives data from a bound Socket. 
                 int bytesRec = senderSock.Receive(bytes);
 
@@ -90,7 +94,9 @@ namespace Computational_Client
                     bytesRec = senderSock.Receive(bytes);
                     theMessageToReceive += Encoding.UTF8.GetString(bytes, 0, bytesRec);
                 }
-                return theMessageToReceive;
+
+                SolveRequest deserializedObject = ser.Deserialize(theMessageToReceive);
+                return deserializedObject;
             }
             catch (Exception exc) {
                 throw exc; 

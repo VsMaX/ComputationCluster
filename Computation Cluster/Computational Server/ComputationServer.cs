@@ -16,7 +16,7 @@ namespace Computational_Server
         private int port;
         private object solveRequestMessagesLock = new object();
 
-        private Queue<SolveRequestMessage> solveRequestMessageQueue;
+        private Queue<SolveRequest> solveRequestMessageQueue;
         private bool receivemsg = true;
 
         public List<NodeEntry> ActiveNodes { get; set; }
@@ -25,7 +25,7 @@ namespace Computational_Server
 
         public ComputationServer(int _port)
         {
-            solveRequestMessageQueue = new Queue<SolveRequestMessage>();
+            solveRequestMessageQueue = new Queue<SolveRequest>();
             port = _port;
         }
 
@@ -42,7 +42,7 @@ namespace Computational_Server
                 var permission = new SocketPermission(
                     NetworkAccess.Accept, // Allowed to accept connections 
                     TransportType.Tcp, // Defines transport types 
-                    "192.168.110.38", // The IP addresses of local host 
+                    "192.168.0.100", // The IP addresses of local host 
                     SocketPermission.AllPorts // Specifies all ports 
                     );
 
@@ -51,7 +51,7 @@ namespace Computational_Server
 
                 // Resolves a host name to an IPHostEntry instance 
                 //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.38");
-                string ip_string = "192.168.110.38";
+                string ip_string = "192.168.0.100";
 
                 //byte[] ip_byte = new byte[ip_string.Length * sizeof(char)];
                 //System.Buffer.BlockCopy(ip_string.ToCharArray(), 0, ip_byte, 0, ip_byte.Length);
@@ -190,7 +190,7 @@ namespace Computational_Server
                     //byte[] bytes = new byte[buff.Length * sizeof(char)];
                     //System.Buffer.BlockCopy(buff.ToCharArray(), 0, bytes, 0, bytes.Length);
 
-                    handler.BeginSend(bytes, 0, bytes.Length, 0,
+                    handler.BeginSend(buffer, 0, buffer.Length, 0,
                             new AsyncCallback(SendCallback), handler);
                 }
             }
@@ -203,7 +203,7 @@ namespace Computational_Server
            return receivemsg;
           
         }
-        public IList<SolveRequestMessage> GetUnfinishedTasks()
+        public IList<SolveRequest> GetUnfinishedTasks()
         {
 
             lock (solveRequestMessagesLock)
@@ -211,7 +211,7 @@ namespace Computational_Server
                 return solveRequestMessageQueue.ToList();
             }
         }
-
+        
         private static void SendCallback(IAsyncResult ar)
         {
             try
