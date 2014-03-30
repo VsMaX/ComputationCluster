@@ -34,9 +34,9 @@ namespace Computational_Client
             //SolveRequest msgs = new SolveRequest();
             //msgs.Data = msg;
 
-            SolveRequest sr = new SolveRequest()
-                { Data = null, ProblemType = "Ciężki problem", SolvingTimeout = 10000, SolvingTimeoutSpecified = true };
-            computationalClient.SendSolveRequest(sr);
+            //SolveRequestMessage sr = new SolveRequestMessage()
+            //    { Data = null, ProblemType = "Ciężki problem", SolvingTimeout = 10000, SolvingTimeoutSpecified = true };
+            //computationalClient.SendSolveRequest(sr);
 
 
             button1.ClickMode = ClickMode.Release;

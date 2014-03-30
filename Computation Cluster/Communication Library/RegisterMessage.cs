@@ -4,12 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Computation_Server
+namespace Communication_Library
 {
-    class Program
+    public class RegisterMessage
     {
-        static void Main(string[] args)
-        {
-        }
+
     }
 }

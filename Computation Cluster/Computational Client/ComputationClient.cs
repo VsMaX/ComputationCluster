@@ -52,55 +52,55 @@ namespace Computational_Client
             catch (Exception exc) {
                 throw exc;
             }
-
         }
 
-        public void SendSolveRequest(SolveRequest msgg)
+        public void SendSolveRequest(SolveRequestMessage msgg)
         {
-            try
-            {
-                // Sending message 
-                //<Client Quit> is the sign for end of data 
-                var ser = new TestSerializeDeserialize();
-                string toSend = ser.Serialize(msgg);
+            //try
+            //{
+            //    // Sending message 
+            //    //<Client Quit> is the sign for end of data 
+            //    var ser = new TestSerializeDeserialize();
+            //    string toSend = ser.Serialize(msgg);
 
-                byte[] theMessageToSend = Encoding.UTF8.GetBytes(toSend);
-                //byte[] msg = Encoding.UTF8.GetBytes(theMessageToSend.ToString() + "<Client Quit>");
-                // Sends data to a connected Socket. 
-                int bytesSend = senderSock.Send(theMessageToSend);
+            //    byte[] theMessageToSend = Encoding.UTF8.GetBytes(toSend);
+            //    //byte[] msg = Encoding.UTF8.GetBytes(theMessageToSend.ToString() + "<Client Quit>");
+            //    // Sends data to a connected Socket. 
+            //    int bytesSend = senderSock.Send(theMessageToSend);
 
-                //ReceiveDataFromServer();
-            }
-            catch (Exception exc) {
-               throw exc;
-            }
+            //    //ReceiveDataFromServer();
+            //}
+            //catch (Exception exc) {
+            //   throw exc;
+            //}
         }
 
         public SolveRequest ReceiveDataFromServer()
         {
-            try
-            {
-                var ser = new TestSerializeDeserialize();
+            //try
+            //{
+            //    var ser = new TestSerializeDeserialize();
 
-                // Receives data from a bound Socket. 
-                int bytesRec = senderSock.Receive(bytes);
+            //    // Receives data from a bound Socket. 
+            //    int bytesRec = senderSock.Receive(bytes);
 
-                // Converts byte array to string 
-                String theMessageToReceive = Encoding.UTF8.GetString(bytes, 0, bytesRec);
+            //    // Converts byte array to string 
+            //    String theMessageToReceive = Encoding.UTF8.GetString(bytes, 0, bytesRec);
 
-                // Continues to read the data till data isn't available 
-                while (senderSock.Available > 0)
-                {
-                    bytesRec = senderSock.Receive(bytes);
-                    theMessageToReceive += Encoding.UTF8.GetString(bytes, 0, bytesRec);
-                }
+            //    // Continues to read the data till data isn't available 
+            //    while (senderSock.Available > 0)
+            //    {
+            //        bytesRec = senderSock.Receive(bytes);
+            //        theMessageToReceive += Encoding.UTF8.GetString(bytes, 0, bytesRec);
+            //    }
 
-                SolveRequest deserializedObject = ser.Deserialize(theMessageToReceive);
-                return deserializedObject;
-            }
-            catch (Exception exc) {
-                throw exc; 
-            }
+            //    SolveRequest deserializedObject = ser.Deserialize(theMessageToReceive);
+            //    return deserializedObject;
+            //}
+            //catch (Exception exc) {
+            //    throw exc; 
+            //}
+            throw new NotImplementedException();
         }
 
         public void Disconnect()

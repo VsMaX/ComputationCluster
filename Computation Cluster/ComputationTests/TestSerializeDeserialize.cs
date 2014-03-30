@@ -6,9 +6,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
+using Communication_Library;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Communication_Library
+namespace ComputationTests
 {
+    [TestClass]
     public class TestSerializeDeserialize
     {
         private XmlSerializer serializer;
@@ -18,14 +21,16 @@ namespace Communication_Library
             serializer = new XmlSerializer(typeof(SolveRequest));
         }
 
-        public string Serialize(SolveRequest objToString)
+        [TestMethod]
+        public void Serialize(SolveRequest objToString)
         {
             var stringWriter = new Utf8StringWriter();
             using (var writer = XmlWriter.Create(stringWriter))
             {
                 serializer.Serialize(writer, objToString);
             }
-            return stringWriter.ToString();
+            string result = stringWriter.ToString();
+            Assert.Fail();
         }
 
         public SolveRequest Deserialize(string computationObjectString)

@@ -16,16 +16,16 @@ namespace Computational_Server
         private int port;
         private object solveRequestMessagesLock = new object();
 
-        private Queue<SolveRequest> solveRequestMessageQueue;
+        private Queue<SolveRequestMessage> solveRequestMessageQueue;
         private bool receivemsg = true;
 
         public List<NodeEntry> ActiveNodes { get; set; }
-
         Socket handler;
 
         public ComputationServer(int _port)
         {
-            solveRequestMessageQueue = new Queue<SolveRequest>();
+            solveRequestMessageQueue = new Queue<SolveRequestMessage>();
+            
             port = _port;
         }
 
@@ -197,15 +197,8 @@ namespace Computational_Server
             catch (Exception ex) { Console.WriteLine(ex.ToString()); }
         }
 
-        public bool IfReceivedTask()
+        public IList<SolveRequestMessage> GetUnfinishedTasks()
         {
-         
-           return receivemsg;
-          
-        }
-        public IList<SolveRequest> GetUnfinishedTasks()
-        {
-
             lock (solveRequestMessagesLock)
             {
                 return solveRequestMessageQueue.ToList();
