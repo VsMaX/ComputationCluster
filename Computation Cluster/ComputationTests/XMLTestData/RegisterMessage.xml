@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Register xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Type>ComputationalNode</Type>
+  <SolvableProblems>
+    <ProblemName>ab</ProblemName>
+    <ProblemName>ba</ProblemName>
+  </SolvableProblems>
+  <ParallelThreads>15</ParallelThreads>
+</Register>

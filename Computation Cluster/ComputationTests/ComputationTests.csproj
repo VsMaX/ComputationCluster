@@ -78,6 +78,9 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="XMLTestData\RegisterMessage.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="XMLTestData\SolveRequestMessage.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

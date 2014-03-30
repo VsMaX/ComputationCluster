@@ -27,11 +27,11 @@ namespace ComputationTests
             Assert.AreEqual(result, testData);
         }
 
-        [DeploymentItem(@"XMLTestData\SolveRequestMessage.xml", "XMLTestData")]
+        [DeploymentItem(@"XMLTestData\RegisterMessage.xml", "XMLTestData")]
         [TestMethod]
         public void RegisterMessageSerialization()
         {
-            string testData = System.IO.File.ReadAllText(@"XMLTestData\SolveRequestMessage.xml");
+            string testData = System.IO.File.ReadAllText(@"XMLTestData\RegisterMessage.xml");
             var serializer = new ComputationSerializer<RegisterMessage>();
             var registerMessage = new RegisterMessage()
             {
