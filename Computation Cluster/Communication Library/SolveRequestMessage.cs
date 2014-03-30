@@ -16,7 +16,7 @@ namespace Communication_Library
         public string ProblemType { get; set; }
         [XmlElement]
         public long SolvingTimeout { get; set; }
-        [XmlElement]
-        public string Data { get; set; }
+        [XmlElement(DataType = "base64Binary")]
+        public byte[] Data { get; set; }
     }
 }

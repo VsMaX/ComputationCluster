@@ -11,10 +11,20 @@ namespace ComputationTests
     [TestClass]
     public class SerializationTests
     {
-        public void ReqisterMessageSerializationTest()
+        [DeploymentItem(@"XMLTestData\SolveRequestMessage.xml", "XMLTestData")]
+        [TestMethod]
+        public void SolveRequestMessageSerialization()
         {
-            //var serializer = ComputationSerializer<RegisterMessage>
-            
+            string testData = System.IO.File.ReadAllText(@"XMLTestData\SolveRequestMessage.xml");
+            var serializer = new ComputationSerializer<SolveRequestMessage>();
+            var solveRequestMessage = new SolveRequestMessage()
+            {
+                Data = new byte[]{0,0,25},
+                ProblemType = "TSP",
+                SolvingTimeout = 15
+            };
+            var result = serializer.Serialize(solveRequestMessage);
+            Assert.AreEqual(result, testData);
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Serialization;
 
 namespace Communication_Library
@@ -20,10 +21,11 @@ namespace Communication_Library
 
         public string Serialize(T computationMessage)
         {
-            string serializedObject = "";
-            using (var sw = new StreamWriter(serializedObject))
+            string serializedObject = String.Empty;
+            using (StringWriter textWriter = new StringWriter())
             {
-                serializer.Serialize(sw, computationMessage);
+                serializer.Serialize(textWriter, computationMessage);
+                return textWriter.ToString();
             }
             return serializedObject;
         }
