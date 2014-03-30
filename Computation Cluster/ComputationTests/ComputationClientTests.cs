@@ -12,19 +12,19 @@ namespace ComputationTests
     [TestClass]
     public class ComputationClientTests
     {
-        private int computationServerPort = 8001;
+        private int computationServerPort = 22222;
         private ComputationServer server;
         
 
         private void StartServer()
         {
-            server = new ComputationServer(computationServerPort);
+            server = new ComputationServer(computationServerPort, "127.0.0.1");
             server.StartListening();
         }
 
         private void StopServer()
         {
-            //server.StopListening();
+            server.StopListening();
         }
 
         [TestInitialize]
@@ -46,12 +46,13 @@ namespace ComputationTests
             var client = new ComputationClient();
 
             var problemRequest = new SolveRequestMessage();
-            string ip = "192.168.0.10";
+
+            string ip = "127.0.0.1";
 
             //ACT
             client.Connect(ip);
             client.SendSolveRequest(problemRequest);
-
+            server.ReceiveAllMessages();
             //ASSERT
             //uwaga tu moze byc deadlock
             Assert.AreEqual(server.GetUnfinishedTasks().Count, 1);

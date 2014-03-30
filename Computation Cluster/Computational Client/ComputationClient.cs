@@ -31,7 +31,7 @@ namespace Computational_Client
                 //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.34");
 
                 // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = IPAddress.Parse("192.168.0.10");
+                IPAddress ipAddr = IPAddress.Parse(ip);
 
                 // Creates a network endpoint 
                 IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 22222);
@@ -54,26 +54,20 @@ namespace Computational_Client
             }
         }
 
-        public void SendSolveRequest(SolveRequestMessage msgg)
+        public void SendSolveRequest(SolveRequestMessage solveRequestMessage)
         {
-            //try
-            //{
-            //    // Sending message 
-            //    //<Client Quit> is the sign for end of data 
-            //    var ser = new TestSerializeDeserialize();
-            //    string toSend = ser.Serialize(msgg);
-
-            //    byte[] theMessageToSend = Encoding.UTF8.GetBytes(toSend);
-            //    //byte[] msg = Encoding.UTF8.GetBytes(theMessageToSend.ToString() + "<Client Quit>");
-            //    // Sends data to a connected Socket. 
-            //    int bytesSend = senderSock.Send(theMessageToSend);
-
-            //    //ReceiveDataFromServer();
-            //}
-            //catch (Exception exc)
-            //{
-            //    throw exc;
-            //}
+            try
+            {
+                var serializer = new ComputationSerializer<SolveRequestMessage>();
+                var message = serializer.Serialize(solveRequestMessage);
+                byte[] byteMessage = Encoding.UTF8.GetBytes(message);
+                // Sends data to a connected Socket. 
+                int bytesSend = senderSock.Send(byteMessage);
+            }
+            catch (Exception exc)
+            {
+                throw exc;
+            }
         }
 
         public SolveRequest ReceiveDataFromServer()
@@ -118,7 +112,7 @@ namespace Computational_Client
             catch (Exception exc) {
                 throw exc;
             }
-        } 
+        }
 
         //
         //public ComputationClient()

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -14,19 +15,21 @@ namespace Computational_Server
     public class ComputationServer
     {
         private int port;
+        private string serverIPAddress;
+
         private object solveRequestMessagesLock = new object();
+        private int openConnectionsCount;
 
         private Queue<SolveRequestMessage> solveRequestMessageQueue;
-        private bool receivemsg = true;
-
         public List<NodeEntry> ActiveNodes { get; set; }
         Socket handler;
 
-        public ComputationServer(int _port)
+        public ComputationServer(int _port, string _ipAddress)
         {
             solveRequestMessageQueue = new Queue<SolveRequestMessage>();
-            
+            serverIPAddress = _ipAddress;
             port = _port;
+            openConnectionsCount = 0;
         }
 
         public void StartListening()
@@ -36,13 +39,13 @@ namespace Computational_Server
             IPEndPoint ipEndPoint = null;
             try
             {
-                Console.WriteLine();
+                Trace.WriteLine("");
 
                 // Creates one SocketPermission object for access restrictions
                 var permission = new SocketPermission(
                     NetworkAccess.Accept, // Allowed to accept connections 
                     TransportType.Tcp, // Defines transport types 
-                    "192.168.0.10", // The IP addresses of local host 
+                    serverIPAddress, // The IP addresses of local host 
                     SocketPermission.AllPorts // Specifies all ports 
                     );
 
@@ -51,15 +54,14 @@ namespace Computational_Server
 
                 // Resolves a host name to an IPHostEntry instance 
                 //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.38");
-                string ip_string = "192.168.0.10";
 
                 //byte[] ip_byte = new byte[ip_string.Length * sizeof(char)];
                 //System.Buffer.BlockCopy(ip_string.ToCharArray(), 0, ip_byte, 0, ip_byte.Length);
                 // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = IPAddress.Parse(ip_string);
+                IPAddress ipAddr = IPAddress.Parse(serverIPAddress);
 
                 // Creates a network endpoint 
-                ipEndPoint = new IPEndPoint(ipAddr, 22222);
+                ipEndPoint = new IPEndPoint(ipAddr, port);
 
                 // Create one Socket object to listen the incoming connection 
                 sListener = new Socket(
@@ -70,9 +72,9 @@ namespace Computational_Server
 
                 // Associates a Socket with a local endpoint 
                 sListener.Bind(ipEndPoint);
-                Console.WriteLine("server started");
+                Trace.WriteLine("Server listening");
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+            catch (Exception ex) { Trace.WriteLine(ex.ToString()); }
 
             try
             {
@@ -84,9 +86,9 @@ namespace Computational_Server
                 AsyncCallback aCallback = new AsyncCallback(AcceptCallback);
                 sListener.BeginAccept(aCallback, sListener);
 
-                Console.WriteLine("Server is now listening on " + ipEndPoint.Address + " port: " + ipEndPoint.Port);
+                Trace.WriteLine("Server is now listening on " + ipEndPoint.Address + " port: " + ipEndPoint.Port);
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+            catch (Exception ex) { Trace.WriteLine(ex.ToString()); }
         }
 
         private void AcceptCallback(IAsyncResult ar)
@@ -94,7 +96,7 @@ namespace Computational_Server
             //TODO przepisac ladnie i wydzielic mniejsze funkcje
             //TODO tutaj powinna sie znajdowac logika odpowiadajaca za rozpoznawanie wiadomosci przychodzacych
             //TODO kazda wiadomosc powinna miec swoja funkcje ktora ja obsluguje
-            Console.WriteLine("Accepted callback");
+            Trace.WriteLine("Accepted callback");
             Socket listener = null;
 
             // A new Socket to handle remote host communication 
@@ -129,7 +131,7 @@ namespace Computational_Server
                 AsyncCallback aCallback = new AsyncCallback(AcceptCallback);
                 listener.BeginAccept(aCallback, listener);
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+            catch (Exception ex) { Trace.WriteLine(ex.ToString()); }
         }
 
         public void StopListening()
@@ -143,15 +145,16 @@ namespace Computational_Server
 
             try
             {
+                Interlocked.Increment(ref openConnectionsCount);
                 // Fetch a user-defined object that contains information 
                 object[] obj = new object[2];
-                obj = (object[])ar.AsyncState;
+                obj = (object[]) ar.AsyncState;
 
                 // Received byte array 
-                byte[] buffer = (byte[])obj[0];
+                byte[] buffer = (byte[]) obj[0];
 
                 // A Socket to handle remote host communication. 
-                handler = (Socket)obj[1];
+                handler = (Socket) obj[1];
 
                 // Received message 
                 string content = string.Empty;
@@ -165,36 +168,24 @@ namespace Computational_Server
                     content += Encoding.UTF8.GetString(buffer, 0,
                         bytesRead);
 
-                    // If message contains "<Client Quit>", finish receiving
-                    if (content.IndexOf("<Client Quit>") > -1)
-                    {
-                        // Convert byte array to string
-                        string str = content.Substring(0, content.LastIndexOf("<Client Quit>"));
+                    
 
-                        Console.WriteLine("Read " + str.Length * 2 + " bytes from client.\n Data: " + str);
-                    }
-                    else
-                    {
-                        // Continues to asynchronously receive data
-                        byte[] buffernew = new byte[1024];
-                        obj[0] = buffernew;
-                        obj[1] = handler;
-                        handler.BeginReceive(buffernew, 0, buffernew.Length,
-                            SocketFlags.None,
-                            new AsyncCallback(ReceiveCallback), obj);
-                    }
-
-                    Console.WriteLine(content);
+                    Trace.WriteLine(content);
                     string buff = "Odebrałem wiadomość od Klienta";
                     byte[] bytes = Encoding.UTF8.GetBytes(buff);
                     //byte[] bytes = new byte[buff.Length * sizeof(char)];
                     //System.Buffer.BlockCopy(buff.ToCharArray(), 0, bytes, 0, bytes.Length);
 
                     handler.BeginSend(buffer, 0, buffer.Length, 0,
-                            new AsyncCallback(SendCallback), handler);
+                        new AsyncCallback(SendCallback), handler);
+                    Interlocked.Decrement(ref openConnectionsCount);
                 }
             }
-            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.ToString());
+                Interlocked.Decrement(ref openConnectionsCount);
+            }
         }
 
         public IList<SolveRequestMessage> GetUnfinishedTasks()
@@ -222,9 +213,14 @@ namespace Computational_Server
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                Trace.WriteLine(e.ToString());
             }
         }
 
+        public void ReceiveAllMessages()
+        {
+            while(openConnectionsCount > 0)
+                Thread.Sleep(1000);
+        }
     }
 }
