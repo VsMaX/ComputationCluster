@@ -31,7 +31,7 @@ namespace Computational_Client
                 //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.34");
 
                 // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = IPAddress.Parse("192.168.0.100");
+                IPAddress ipAddr = IPAddress.Parse("192.168.0.10");
 
                 // Creates a network endpoint 
                 IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 22222);
@@ -70,8 +70,9 @@ namespace Computational_Client
 
             //    //ReceiveDataFromServer();
             //}
-            //catch (Exception exc) {
-            //   throw exc;
+            //catch (Exception exc)
+            //{
+            //    throw exc;
             //}
         }
 

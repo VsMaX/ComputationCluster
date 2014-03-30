@@ -10,6 +10,7 @@ using System.Xml.Serialization;
 namespace Communication_Library
 {
     [Serializable]
+    [XmlRoot(ElementName = "SolveRequest")]
     public class SolveRequestMessage : ComputationMessage
     {
         [XmlElement]

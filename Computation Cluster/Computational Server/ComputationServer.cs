@@ -42,7 +42,7 @@ namespace Computational_Server
                 var permission = new SocketPermission(
                     NetworkAccess.Accept, // Allowed to accept connections 
                     TransportType.Tcp, // Defines transport types 
-                    "192.168.0.100", // The IP addresses of local host 
+                    "192.168.0.10", // The IP addresses of local host 
                     SocketPermission.AllPorts // Specifies all ports 
                     );
 
@@ -51,7 +51,7 @@ namespace Computational_Server
 
                 // Resolves a host name to an IPHostEntry instance 
                 //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.38");
-                string ip_string = "192.168.0.100";
+                string ip_string = "192.168.0.10";
 
                 //byte[] ip_byte = new byte[ip_string.Length * sizeof(char)];
                 //System.Buffer.BlockCopy(ip_string.ToCharArray(), 0, ip_byte, 0, ip_byte.Length);

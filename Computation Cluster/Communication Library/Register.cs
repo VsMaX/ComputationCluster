@@ -26,65 +26,66 @@ namespace Communication_Library
     public partial class Register
     {
 
-        private RegisterType typeField;
+        //    private RegisterType typeField;
 
-        private string[] solvableProblemsField;
+        //    private string[] solvableProblemsField;
 
-        private byte parallelThreadsField;
+        //    private byte parallelThreadsField;
 
-        /// <remarks/>
-        public RegisterType Type
-        {
-            get
-            {
-                return this.typeField;
-            }
-            set
-            {
-                this.typeField = value;
-            }
-        }
+        //    /// <remarks/>
+        //    public RegisterType Type
+        //    {
+        //        get
+        //        {
+        //            return this.typeField;
+        //        }
+        //        set
+        //        {
+        //            this.typeField = value;
+        //        }
+        //    }
 
-        /// <remarks/>
-        [System.Xml.Serialization.XmlArrayItemAttribute("ProblemName", IsNullable = false)]
-        public string[] SolvableProblems
-        {
-            get
-            {
-                return this.solvableProblemsField;
-            }
-            set
-            {
-                this.solvableProblemsField = value;
-            }
-        }
+        //    /// <remarks/>
+        //    [System.Xml.Serialization.XmlArrayItemAttribute("ProblemName", IsNullable = false)]
+        //    public string[] SolvableProblems
+        //    {
+        //        get
+        //        {
+        //            return this.solvableProblemsField;
+        //        }
+        //        set
+        //        {
+        //            this.solvableProblemsField = value;
+        //        }
+        //    }
 
-        /// <remarks/>
-        public byte ParallelThreads
-        {
-            get
-            {
-                return this.parallelThreadsField;
-            }
-            set
-            {
-                this.parallelThreadsField = value;
-            }
-        }
+        //    /// <remarks/>
+        //    public byte ParallelThreads
+        //    {
+        //        get
+        //        {
+        //            return this.parallelThreadsField;
+        //        }
+        //        set
+        //        {
+        //            this.parallelThreadsField = value;
+        //        }
+        //    }
+        //}
+
+        ///// <remarks/>
+        //[System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.0.30319.17929")]
+        //[System.SerializableAttribute()]
+        //[System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true, Namespace = "http://www.mini.pw.edu.pl/ucc/")]
+        //public enum RegisterType
+        //{
+
+        //    /// <remarks/>
+        //    TaskManager,
+
+        //    /// <remarks/>
+        //    ComputationalNode,
+        //}
+
     }
-
-    /// <remarks/>
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.0.30319.17929")]
-    [System.SerializableAttribute()]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true, Namespace = "http://www.mini.pw.edu.pl/ucc/")]
-    public enum RegisterType
-    {
-
-        /// <remarks/>
-        TaskManager,
-
-        /// <remarks/>
-        ComputationalNode,
-    }
-
 }

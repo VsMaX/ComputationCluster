@@ -26,5 +26,21 @@ namespace ComputationTests
             var result = serializer.Serialize(solveRequestMessage);
             Assert.AreEqual(result, testData);
         }
+
+        [DeploymentItem(@"XMLTestData\SolveRequestMessage.xml", "XMLTestData")]
+        [TestMethod]
+        public void RegisterMessageSerialization()
+        {
+            string testData = System.IO.File.ReadAllText(@"XMLTestData\SolveRequestMessage.xml");
+            var serializer = new ComputationSerializer<RegisterMessage>();
+            var registerMessage = new RegisterMessage()
+            {
+                Type = RegisterType.ComputationalNode,
+                SolvableProblems = new string[]{"ab","ba"},
+                ParallelThreads = 15
+            };
+            var result = serializer.Serialize(registerMessage);
+            Assert.AreEqual(result, testData);
+        }
     }
 }

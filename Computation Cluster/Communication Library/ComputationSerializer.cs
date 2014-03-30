@@ -22,22 +22,29 @@ namespace Communication_Library
         public string Serialize(T computationMessage)
         {
             string serializedObject = String.Empty;
-            using (StringWriter textWriter = new StringWriter())
+            using (Utf8StringWriter textWriter = new Utf8StringWriter())
             {
                 serializer.Serialize(textWriter, computationMessage);
                 return textWriter.ToString();
             }
-            return serializedObject;
         }
 
         public T Deserialize(string computationObjectString)
         {
             T deserializedObject = null;
-            using (var sr = new StreamReader(computationObjectString))
+            using (var sr = new StringReader(computationObjectString))
             {
                 deserializedObject = (T)serializer.Deserialize(sr);
             }
             return deserializedObject;
+        }
+    }
+
+    public class Utf8StringWriter : StringWriter
+    {
+        public override Encoding Encoding
+        {
+            get { return Encoding.UTF8; }
         }
     }
 }
