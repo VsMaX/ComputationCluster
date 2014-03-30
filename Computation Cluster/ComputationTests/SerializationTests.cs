@@ -42,5 +42,20 @@ namespace ComputationTests
             var result = serializer.Serialize(registerMessage);
             Assert.AreEqual(result, testData);
         }
+
+        [DeploymentItem(@"XMLTestData\RegisterResponseMessage.xml", "XMLTestData")]
+        [TestMethod]
+        public void RegisterResponseMessageSerialization()
+        {
+            string testData = System.IO.File.ReadAllText(@"XMLTestData\RegisterResponseMessage.xml");
+            var serializer = new ComputationSerializer<RegisterResponseMessage>();
+            var registerResponseMessage = new RegisterResponseMessage()
+            {
+                Id = 1,
+                Timeout = new DateTime(2010, 1, 18),
+            };
+            var result = serializer.Serialize(registerResponseMessage);
+            Assert.AreEqual(result, testData);
+        }
     }
 }
