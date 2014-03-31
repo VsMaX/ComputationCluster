@@ -81,21 +81,18 @@ namespace ComputationTests
         public void CN_Send_Solved_Subtask_To_CS()
         {
             Assert.Fail();
-            
         }
 
         [TestMethod]
         public void CS_Divide_Subtasks_Among_CNs()
         {
             Assert.Fail();
-            
         }
 
         [TestMethod]
         public void CS_Send_Solution_To_CC()
         {
             Assert.Fail();
-            
         }
     }
 }
