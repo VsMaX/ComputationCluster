@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -7,51 +8,14 @@ using Communication_Library;
 
 namespace Computational_Client
 {
-    public class ComputationClient
+    public class ComputationClient : IDisposable
     {
-        Socket senderSock;
         byte[] bytes = new byte[1024];
+        private CommunicationModule communicationModule;
 
-        public void Connect(string ip)
+        public ComputationClient(string ip, int port)
         {
-            try
-            {
-                // Create one SocketPermission for socket access restrictions 
-                SocketPermission permission = new SocketPermission(
-                    NetworkAccess.Connect,    // Connection permission 
-                    TransportType.Tcp,        // Defines transport types 
-                    "",                       // Gets the IP addresses 
-                    SocketPermission.AllPorts // All ports 
-                    );
-
-                // Ensures the code to have permission to access a Socket 
-                permission.Demand();
-
-                // Resolves a host name to an IPHostEntry instance            
-                //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.34");
-
-                // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = IPAddress.Parse(ip);
-
-                // Creates a network endpoint 
-                IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 22222);
-
-                // Create one Socket object to setup Tcp connection 
-                senderSock = new Socket(
-                    ipAddr.AddressFamily,// Specifies the addressing scheme 
-                    SocketType.Stream,   // The type of socket  
-                    ProtocolType.Tcp     // Specifies the protocols  
-                    );
-
-                senderSock.NoDelay = false;   // Using the Nagle algorithm 
-
-                // Establishes a connection to a remote host 
-                senderSock.Connect(ipEndPoint);
-                //tbStatus.Text = "Socket connected to " + senderSock.RemoteEndPoint.ToString();
-            }
-            catch (Exception exc) {
-                throw exc;
-            }
+            communicationModule = new CommunicationModule(ip, port);
         }
 
         public void SendSolveRequest(SolveRequestMessage solveRequestMessage)
@@ -61,12 +25,13 @@ namespace Computational_Client
                 var serializer = new ComputationSerializer<SolveRequestMessage>();
                 var message = serializer.Serialize(solveRequestMessage);
                 byte[] byteMessage = Encoding.UTF8.GetBytes(message);
-                // Sends data to a connected Socket. 
-                int bytesSend = senderSock.Send(byteMessage);
+                communicationModule.SendData(byteMessage);
+                var response = communicationModule.ReceiveData();
             }
-            catch (Exception exc)
+            catch (Exception ex)
             {
-                throw exc;
+                Trace.WriteLine(ex.ToString());
+                //TODO logowanie
             }
         }
 
@@ -100,18 +65,7 @@ namespace Computational_Client
 
         public void Disconnect()
         {
-            try
-            {
-                // Disables sends and receives on a Socket. 
-                senderSock.Shutdown(SocketShutdown.Both);
-
-                //Closes the Socket connection and releases all resources 
-                senderSock.Close();
-
-            }
-            catch (Exception exc) {
-                throw exc;
-            }
+            
         }
 
         //
@@ -135,5 +89,9 @@ namespace Computational_Client
         //{
         //    throw new NotImplementedException();
         //}
+        public void Dispose()
+        {
+            communicationModule.Dispose();
+        }
     }
 }

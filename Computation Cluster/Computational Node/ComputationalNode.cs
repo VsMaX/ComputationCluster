@@ -12,5 +12,7 @@ namespace Computational_Node
         {
             throw new NotImplementedException();
         }
+
+        public int NodeId { get; set; }
     }
 }

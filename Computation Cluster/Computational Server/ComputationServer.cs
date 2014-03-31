@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
@@ -8,6 +9,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using Communication_Library;
 
 namespace Computational_Server
@@ -19,17 +21,22 @@ namespace Computational_Server
 
         private object solveRequestMessagesLock = new object();
         private int openConnectionsCount;
+        private int activeNodeCount;
 
-        private Queue<SolveRequestMessage> solveRequestMessageQueue;
-        public List<NodeEntry> ActiveNodes { get; set; }
+        private ConcurrentQueue<SolveRequestMessage> solveRequestMessageQueue;
+        public ConcurrentBag<NodeEntry> ActiveNodes { get; set; }
         Socket handler;
 
-        public ComputationServer(int _port, string _ipAddress)
+        public readonly TimeSpan DefaultTimeout;
+
+        public ComputationServer(string _ipAddress, int _port, TimeSpan nodeTimeout)
         {
-            solveRequestMessageQueue = new Queue<SolveRequestMessage>();
+            solveRequestMessageQueue = new ConcurrentQueue<SolveRequestMessage>();
             serverIPAddress = _ipAddress;
             port = _port;
             openConnectionsCount = 0;
+            activeNodeCount = 0;
+            DefaultTimeout = nodeTimeout;
         }
 
         public void StartListening()
@@ -117,6 +124,7 @@ namespace Computational_Server
                 obj[0] = buffer;
                 obj[1] = handler;
 
+                Interlocked.Increment(ref openConnectionsCount);
                 // Begins to asynchronously receive data 
                 handler.BeginReceive(
                     buffer,        // An array of type Byt for received data 
@@ -145,7 +153,6 @@ namespace Computational_Server
 
             try
             {
-                Interlocked.Increment(ref openConnectionsCount);
                 // Fetch a user-defined object that contains information 
                 object[] obj = new object[2];
                 obj = (object[]) ar.AsyncState;
@@ -163,23 +170,18 @@ namespace Computational_Server
                 // The number of bytes received. 
                 int bytesRead = handler.EndReceive(ar);
 
-                if (bytesRead > 0)
-                {
-                    content += Encoding.UTF8.GetString(buffer, 0,
-                        bytesRead);
+                content = CommunicationModule.ConvertDataToString(buffer, bytesRead);
 
-                    
+                Trace.WriteLine("Received message: " + content);
 
-                    Trace.WriteLine(content);
-                    string buff = "Odebrałem wiadomość od Klienta";
-                    byte[] bytes = Encoding.UTF8.GetBytes(buff);
-                    //byte[] bytes = new byte[buff.Length * sizeof(char)];
-                    //System.Buffer.BlockCopy(buff.ToCharArray(), 0, bytes, 0, bytes.Length);
+                var response = ProcessMessage(content);
 
-                    handler.BeginSend(buffer, 0, buffer.Length, 0,
-                        new AsyncCallback(SendCallback), handler);
-                    Interlocked.Decrement(ref openConnectionsCount);
-                }
+                byte[] bytes = CommunicationModule.ConvertStringToData(response);
+                //byte[] bytes = new byte[buff.Length * sizeof(char)];
+                //System.Buffer.BlockCopy(buff.ToCharArray(), 0, bytes, 0, bytes.Length);
+
+                handler.BeginSend(bytes, 0, bytes.Length, 0,
+                    new AsyncCallback(SendCallback), handler);
             }
             catch (Exception ex)
             {
@@ -188,12 +190,90 @@ namespace Computational_Server
             }
         }
 
+        private string ProcessMessage(string message)
+        {
+            var messageName = GetMessageName(message);
+            switch (messageName)
+            {
+                case "Register":
+                    Trace.WriteLine("Received Register");
+                    var registerMessage = DeserializeMessage<RegisterMessage>(message);
+                    Interlocked.Increment(ref activeNodeCount);
+                    var nodeEntry = new NodeEntry()
+                    {
+                        ID = activeNodeCount,
+                        LastActive = DateTime.Now,
+                        SolvingProblems = registerMessage.SolvableProblems.ToList()
+                    };
+                    
+                    ActiveNodes.Add(nodeEntry);
+                    var response = new RegisterResponseMessage()
+                    {
+                        Id = (ulong) nodeEntry.ID,
+                        Timeout = DefaultTimeout
+                    };
+                    return SerializeMessage<RegisterResponseMessage>(response);
+                    break;
+                case "SolveRequest":
+                    Trace.WriteLine("Received SolveRequest");
+                    var deserializedMessage = DeserializeMessage<SolveRequestMessage>(message);
+                    solveRequestMessageQueue.Enqueue(deserializedMessage);
+                    break;
+            }
+            Interlocked.Decrement(ref openConnectionsCount);
+            return String.Empty;
+        }
+
+        
+
+        private string GetMessageName(string message)
+        {
+            XmlDocument doc = new XmlDocument();
+            try
+            {
+                doc.LoadXml(message);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("Error parsing xml document: " + message + "exception: " + ex.ToString());
+                return String.Empty;
+                //TODO logowanie
+            }
+            XmlElement root = doc.DocumentElement;
+            return root.Name;
+        }
+
+        private string SerializeMessage<T>(T message) where T : ComputationMessage
+        {
+            var serializer = new ComputationSerializer<T>();
+            try
+            {
+                return serializer.Serialize(message);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("Error deserializing message: " + ex.ToString() + " Message: " + message);
+                return String.Empty;
+            }
+        }
+
+        private T DeserializeMessage<T>(string message) where T : ComputationMessage
+        {
+            var serializer = new ComputationSerializer<T>();
+            try
+            {
+                return serializer.Deserialize(message);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("Error deserializing message: " + ex.ToString() + " Message: " + message);
+                return null;
+            }
+        }
+
         public IList<SolveRequestMessage> GetUnfinishedTasks()
         {
-            lock (solveRequestMessagesLock)
-            {
-                return solveRequestMessageQueue.ToList();
-            }
+            return solveRequestMessageQueue.ToList();
         }
         
         private static void SendCallback(IAsyncResult ar)
@@ -219,8 +299,11 @@ namespace Computational_Server
 
         public void ReceiveAllMessages()
         {
-            while(openConnectionsCount > 0)
+            while (openConnectionsCount > 0)
+            {
+                Trace.WriteLine("Number of open connections: " + openConnectionsCount.ToString());
                 Thread.Sleep(1000);
+            }
         }
     }
 }

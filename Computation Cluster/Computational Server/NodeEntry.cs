@@ -8,8 +8,8 @@ namespace Computational_Server
 {
     public class NodeEntry
     {
-        public string IP { get; set; }
         public int ID { get; set; }
-        public List<ProblemType> SolvingProblems { get; set; }
+        public List<string> SolvingProblems { get; set; }
+        public DateTime LastActive { get; set; }
     }
 }

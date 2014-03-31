@@ -14,6 +14,6 @@ namespace Communication_Library
         [XmlElement]
         public ulong Id { get; set; }
         [XmlElement]
-        public DateTime Timeout { get; set; }
+        public TimeSpan Timeout { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using Communication_Library;
 using Computational_Node;
 using Computational_Server;
@@ -13,12 +14,13 @@ namespace ComputationTests
     public class ComputationClientTests
     {
         private int computationServerPort = 22222;
+        private string computationServerIp = "127.0.0.1";
         private ComputationServer server;
         
 
         private void StartServer()
         {
-            server = new ComputationServer(computationServerPort, "127.0.0.1");
+            server = new ComputationServer(computationServerIp, computationServerPort, new TimeSpan(0,0,30));
             server.StartListening();
         }
 
@@ -43,30 +45,30 @@ namespace ComputationTests
         public void CC_To_CS_Communication_Test()
         {
             //ARRANGE
-            var client = new ComputationClient();
+            var client = new ComputationClient(computationServerIp, computationServerPort);
 
             var problemRequest = new SolveRequestMessage();
 
             string ip = "127.0.0.1";
 
             //ACT
-            client.Connect(ip);
             client.SendSolveRequest(problemRequest);
             server.ReceiveAllMessages();
             //ASSERT
             //uwaga tu moze byc deadlock
+            //zapobieganie deadlockowi odbywa sie przy pomocy metody ReceiveAllMessages
             Assert.AreEqual(server.GetUnfinishedTasks().Count, 1);
         }
 
-        //[TestMethod]
-        //public void CN_Register_To_CS_Test()
-        //{
-        //    var computationalNode = new ComputationnalNode();
-
-        //    computationalNode.RegisterAtServer();
-
-        //    Assert.AreEqual(server.ActiveNodes.Count, 1);
-        //}
+        [TestMethod]
+        public void CN_Register_To_CS_Test()
+        {
+            var computationalNode = new ComputationnalNode();
+            computationalNode.RegisterAtServer();
+            Assert.AreEqual(computationalNode.NodeId, 1);
+ 
+            Assert.AreEqual(server.ActiveNodes.Count, 1);
+        }
 
         [TestMethod]
         public void CS_Send_Problem_To_Task_Manager()
