@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text;
 using Communication_Library;
@@ -22,11 +23,11 @@ namespace Computational_Client
         {
             try
             {
+                communicationModule.Connect();
                 var serializer = new ComputationSerializer<SolveRequestMessage>();
                 var message = serializer.Serialize(solveRequestMessage);
                 byte[] byteMessage = Encoding.UTF8.GetBytes(message);
                 communicationModule.SendData(byteMessage);
-                var response = communicationModule.ReceiveData();
             }
             catch (Exception ex)
             {
@@ -35,32 +36,12 @@ namespace Computational_Client
             }
         }
 
-        public SolveRequestMessage ReceiveDataFromServer()
+        public string ReceiveDataFromServer()
         {
-            //try
-            //{
-            //    var ser = new TestSerializeDeserialize();
-
-            //    // Receives data from a bound Socket. 
-            //    int bytesRec = senderSock.Receive(bytes);
-
-            //    // Converts byte array to string 
-            //    String theMessageToReceive = Encoding.UTF8.GetString(bytes, 0, bytesRec);
-
-            //    // Continues to read the data till data isn't available 
-            //    while (senderSock.Available > 0)
-            //    {
-            //        bytesRec = senderSock.Receive(bytes);
-            //        theMessageToReceive += Encoding.UTF8.GetString(bytes, 0, bytesRec);
-            //    }
-
-            //    SolveRequest deserializedObject = ser.Deserialize(theMessageToReceive);
-            //    return deserializedObject;
-            //}
-            //catch (Exception exc) {
-            //    throw exc; 
-            //}
-            throw new NotImplementedException();
+            communicationModule.Connect();
+            var data = communicationModule.ReceiveData();
+            Trace.WriteLine("Response: " + data.ToString());
+            return data;
         }
 
         public void Disconnect()

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Configuration;
@@ -21,8 +22,10 @@ namespace Communication_Library
             _ip = ip;
         }
 
-        public void Connect(string ip, int port)
+        public void Connect()
         {
+            if (senderSock != null && senderSock.Connected)
+                return;
             try
             {
                 // Create one SocketPermission for socket access restrictions 
@@ -40,10 +43,10 @@ namespace Communication_Library
                 //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.34");
 
                 // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = IPAddress.Parse(ip);
+                IPAddress ipAddr = IPAddress.Parse(_ip);
 
                 // Creates a network endpoint 
-                IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, port);
+                IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, _port);
 
                 // Create one Socket object to setup Tcp connection 
                 senderSock = new Socket(
@@ -57,20 +60,24 @@ namespace Communication_Library
                 // Establishes a connection to a remote host 
                 senderSock.Connect(ipEndPoint);
                 //tbStatus.Text = "Socket connected to " + senderSock.RemoteEndPoint.ToString();
+                Trace.WriteLine("Connected");
             }
             catch (Exception exc)
             {
+                Trace.WriteLine("Error connecting to server");
                 throw exc;
             }
         }
 
-        public int SendData(byte[] message)
+        public void SendData(byte[] message)
         {
-            Connect(_ip, _port);
             // Sends data to a connected Socket. 
-            int bytesSent = senderSock.Send(message);
-            Disconnect();
-            return bytesSent;
+            int bytesCount = 0;
+            while (bytesCount != message.Length)
+            {
+                bytesCount += senderSock.Send(message);
+                Trace.WriteLine("Sent " + bytesCount.ToString() + " bytes to server");
+            }
         }
 
         public void Disconnect()

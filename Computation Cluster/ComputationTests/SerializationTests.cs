@@ -52,7 +52,7 @@ namespace ComputationTests
             var registerResponseMessage = new RegisterResponseMessage()
             {
                 Id = 1,
-                Timeout = new DateTime(2010, 1, 18),
+                Timeout = new TimeSpan(2010, 1, 18),
             };
             var result = serializer.Serialize(registerResponseMessage);
             Assert.AreEqual(result, testData);

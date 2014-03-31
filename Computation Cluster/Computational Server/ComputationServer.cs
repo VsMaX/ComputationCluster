@@ -14,7 +14,7 @@ using Communication_Library;
 
 namespace Computational_Server
 {
-    public class ComputationServer
+    public class ComputationServer : BaseNode
     {
         private int port;
         private string serverIPAddress;
@@ -32,6 +32,7 @@ namespace Computational_Server
         public ComputationServer(string _ipAddress, int _port, TimeSpan nodeTimeout)
         {
             solveRequestMessageQueue = new ConcurrentQueue<SolveRequestMessage>();
+            ActiveNodes = new ConcurrentBag<NodeEntry>();
             serverIPAddress = _ipAddress;
             port = _port;
             openConnectionsCount = 0;
@@ -105,7 +106,7 @@ namespace Computational_Server
             //TODO kazda wiadomosc powinna miec swoja funkcje ktora ja obsluguje
             Trace.WriteLine("Accepted callback");
             Socket listener = null;
-
+            Thread.Sleep(2000);
             // A new Socket to handle remote host communication 
             try
             {
@@ -124,7 +125,6 @@ namespace Computational_Server
                 obj[0] = buffer;
                 obj[1] = handler;
 
-                Interlocked.Increment(ref openConnectionsCount);
                 // Begins to asynchronously receive data 
                 handler.BeginReceive(
                     buffer,        // An array of type Byt for received data 
@@ -150,7 +150,6 @@ namespace Computational_Server
         public void ReceiveCallback(IAsyncResult ar)
         {
             //TODO przepisac ladnie i wydzielic mniejsze funkcje
-
             try
             {
                 // Fetch a user-defined object that contains information 
@@ -186,7 +185,6 @@ namespace Computational_Server
             catch (Exception ex)
             {
                 Trace.WriteLine(ex.ToString());
-                Interlocked.Decrement(ref openConnectionsCount);
             }
         }
 
@@ -196,35 +194,44 @@ namespace Computational_Server
             switch (messageName)
             {
                 case "Register":
+                    Interlocked.Increment(ref openConnectionsCount);
                     Trace.WriteLine("Received Register");
-                    var registerMessage = DeserializeMessage<RegisterMessage>(message);
-                    Interlocked.Increment(ref activeNodeCount);
-                    var nodeEntry = new NodeEntry()
+                    RegisterMessage registerMessage = null;
+                    try
                     {
-                        ID = activeNodeCount,
-                        LastActive = DateTime.Now,
-                        SolvingProblems = registerMessage.SolvableProblems.ToList()
-                    };
+                        int newId = Thread.VolatileRead(ref openConnectionsCount);
+                        registerMessage = DeserializeMessage<RegisterMessage>(message);
+                        var nodeEntry = new NodeEntry()
+                        {
+                            ID = newId,
+                            LastActive = DateTime.Now,
+                            SolvingProblems = registerMessage.SolvableProblems.ToList()
+                        };
+
+                        ActiveNodes.Add(nodeEntry);
+                        var response = new RegisterResponseMessage()
+                        {
+                            Id = (ulong)nodeEntry.ID,
+                            Timeout = DefaultTimeout
+                        };
+                        return SerializeMessage<RegisterResponseMessage>(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.WriteLine(ex.ToString());
+                    }
                     
-                    ActiveNodes.Add(nodeEntry);
-                    var response = new RegisterResponseMessage()
-                    {
-                        Id = (ulong) nodeEntry.ID,
-                        Timeout = DefaultTimeout
-                    };
-                    return SerializeMessage<RegisterResponseMessage>(response);
                     break;
                 case "SolveRequest":
                     Trace.WriteLine("Received SolveRequest");
                     var deserializedMessage = DeserializeMessage<SolveRequestMessage>(message);
                     solveRequestMessageQueue.Enqueue(deserializedMessage);
+                    var solveRequestResponse = new SolveRequestResponseMessage() {Id = 1};
+                    return SerializeMessage<SolveRequestResponseMessage>(solveRequestResponse);
                     break;
             }
-            Interlocked.Decrement(ref openConnectionsCount);
             return String.Empty;
         }
-
-        
 
         private string GetMessageName(string message)
         {
@@ -241,34 +248,6 @@ namespace Computational_Server
             }
             XmlElement root = doc.DocumentElement;
             return root.Name;
-        }
-
-        private string SerializeMessage<T>(T message) where T : ComputationMessage
-        {
-            var serializer = new ComputationSerializer<T>();
-            try
-            {
-                return serializer.Serialize(message);
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine("Error deserializing message: " + ex.ToString() + " Message: " + message);
-                return String.Empty;
-            }
-        }
-
-        private T DeserializeMessage<T>(string message) where T : ComputationMessage
-        {
-            var serializer = new ComputationSerializer<T>();
-            try
-            {
-                return serializer.Deserialize(message);
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine("Error deserializing message: " + ex.ToString() + " Message: " + message);
-                return null;
-            }
         }
 
         public IList<SolveRequestMessage> GetUnfinishedTasks()
@@ -299,7 +278,7 @@ namespace Computational_Server
 
         public void ReceiveAllMessages()
         {
-            while (openConnectionsCount > 0)
+            while (Thread.VolatileRead(ref openConnectionsCount) > 0)
             {
                 Trace.WriteLine("Number of open connections: " + openConnectionsCount.ToString());
                 Thread.Sleep(1000);

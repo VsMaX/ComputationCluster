@@ -39,6 +39,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseNode.cs" />
     <Compile Include="CommunicationModule.cs" />
     <Compile Include="ComputationMessage.cs" />
     <Compile Include="ComputationSerializer.cs" />
