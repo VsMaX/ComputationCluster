@@ -40,7 +40,7 @@ namespace Computational_Client
 
 
             button1.ClickMode = ClickMode.Release;
-            SolveRequest sr2 = computationalClient.ReceiveDataFromServer();
+            SolveRequestMessage sr2 = computationalClient.ReceiveDataFromServer();
             potwierdzenie.Text = sr2.ProblemType.ToString() + " " + sr2.SolvingTimeout.ToString() + " ";
         }
     }

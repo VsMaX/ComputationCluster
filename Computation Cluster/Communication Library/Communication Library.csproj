@@ -48,10 +48,9 @@
     <Compile Include="Solution.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SolutionRequest.cs" />
-    <Compile Include="SolveRequest.cs" />
     <Compile Include="SolveRequestMessage.cs" />
     <Compile Include="SolveRequestResponse.cs" />
-    <Compile Include="Status.cs" />
+    <Compile Include="SolveRequestResponseMessage.cs" />
     <Compile Include="StatusMessage.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
