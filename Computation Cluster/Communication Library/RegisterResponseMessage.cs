@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,6 +15,25 @@ namespace Communication_Library
         [XmlElement]
         public ulong Id { get; set; }
         [XmlElement]
-        public TimeSpan Timeout { get; set; }
+        public string Timeout { get; set; }
+
+        [XmlIgnore]
+        public TimeSpan Time
+        {
+            get
+            {
+                //CultureInfo culture = new CultureInfo("HH:mm:ss");
+                TimeSpan ts = new TimeSpan();
+                TimeSpan.TryParse(Timeout, out ts);
+                
+                //........
+                return ts;
+            }
+            set 
+            {
+                Time = value;
+                Timeout = Time.ToString();
+            }
+        }
     }
 }
