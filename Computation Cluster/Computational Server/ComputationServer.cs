@@ -188,6 +188,33 @@ namespace Computational_Server
             }
         }
 
+        private string Register(int newId, RegisterType rt, List<string> solving)
+        {
+            var nodeEntry = new NodeEntry()
+            {
+                ID = newId,
+                Type = rt,
+                LastActive = DateTime.Now,
+                SolvingProblems = solving
+            };
+
+            ActiveNodes.Add(nodeEntry);
+            var response = new RegisterResponseMessage()
+            {
+                Id = (ulong)nodeEntry.ID,
+                Time = DefaultTimeout
+            };
+            return SerializeMessage<RegisterResponseMessage>(response);
+        }
+
+        private bool IfTaskManager(ulong id)
+        {
+            if (ActiveNodes.First(x => x.ID == (int)id).Type == RegisterType.TaskManager)
+                return true;
+            else
+                return false;
+        }
+
         private string ProcessMessage(string message)
         {
             var messageName = GetMessageName(message);
@@ -201,20 +228,18 @@ namespace Computational_Server
                     {
                         int newId = Thread.VolatileRead(ref openConnectionsCount);
                         registerMessage = DeserializeMessage<RegisterMessage>(message);
-                        var nodeEntry = new NodeEntry()
-                        {
-                            ID = newId,
-                            LastActive = DateTime.Now,
-                            SolvingProblems = registerMessage.SolvableProblems.ToList()
-                        };
 
-                        ActiveNodes.Add(nodeEntry);
-                        var response = new RegisterResponseMessage()
+                        switch (registerMessage.Type)
                         {
-                            Id = (ulong)nodeEntry.ID,
-                            Time = DefaultTimeout
-                        };
-                        return SerializeMessage<RegisterResponseMessage>(response);
+                            case RegisterType.ComputationalNode:
+                                return Register(newId, registerMessage.Type, registerMessage.SolvableProblems.ToList());
+                                break;
+                            case RegisterType.TaskManager:
+                                return Register(newId, registerMessage.Type, registerMessage.SolvableProblems.ToList());
+                                break;
+                        }
+
+
                     }
                     catch (Exception ex)
                     {
@@ -240,6 +265,11 @@ namespace Computational_Server
                     Trace.WriteLine("Received Status");
                     var deserializedStatusMessage = DeserializeMessage<StatusMessage>(message);
                     //TODO odswiezyc czas zycia CNa na liscie
+                    if (IfTaskManager(deserializedStatusMessage.Id))
+                    {
+                        var dp = new DivideProblemMessage() { Id = deserializedStatusMessage.Id, ComputationalNodes = 20, Data = new byte[] { 0, 0, 10 }, ProblemType = "TSP" };
+                        return SerializeMessage<DivideProblemMessage>(dp);
+                    }
                     return "";
                     break;
             }

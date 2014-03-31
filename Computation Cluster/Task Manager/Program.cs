@@ -22,6 +22,7 @@ namespace Task_Manager
                     break;
             }
             Console.ReadKey();
+            //node.ReceiveDataFromServer();
         }
     }
 }

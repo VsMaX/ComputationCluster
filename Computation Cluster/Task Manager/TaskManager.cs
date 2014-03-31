@@ -59,5 +59,14 @@ namespace Task_Manager
             var statusMessageResponse = communicationModule.ReceiveData();
             Trace.WriteLine("status response: " + statusMessageResponse);
         }
+       
+        public string ReceiveDataFromServer()
+        {
+            communicationModule.Connect();
+            var data = communicationModule.ReceiveData();
+            Trace.WriteLine("Response: " + data.ToString());
+            return data;
+        }
+
     }
 }
