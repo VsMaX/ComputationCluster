@@ -128,5 +128,31 @@ namespace ComputationTests
             var result = serializer.Serialize(solutionRequestMessage);
             Assert.AreEqual(result, testData);
         }
+
+        [DeploymentItem(@"XMLTestData\PartialProblemsMessage.xml", "XMLTestData")]
+        [TestMethod]
+        public void PartialProblemsMessageSerialization()
+        {
+            string testData = System.IO.File.ReadAllText(@"XMLTestData\PartialProblemsMessage.xml");
+            var serializer = new ComputationSerializer<PartialProblemsMessage>();
+
+            SolvePartialProblemsPartialProblem pp = new SolvePartialProblemsPartialProblem()
+            {
+                TaskId = 20,
+                Data = new byte[] { 0, 0, 10 }
+            };
+
+            var partialProblemsMessage = new PartialProblemsMessage()
+            {
+                ProblemType="TSP",
+                Id = 1,
+                CommonData = new byte[] { 0, 0, 25 },
+                SolvingTimeout = 50,
+                SolvingTimeoutSpecified = true,
+                PartialProblems = new SolvePartialProblemsPartialProblem[]{pp}
+            };
+            var result = serializer.Serialize(partialProblemsMessage);
+            Assert.AreEqual(result, testData);
+        }
     }
 }

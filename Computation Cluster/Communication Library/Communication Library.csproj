@@ -44,6 +44,7 @@
     <Compile Include="DivideProblem.cs" />
     <Compile Include="DivideProblemMessage.cs" />
     <Compile Include="PartialProblem.cs" />
+    <Compile Include="PartialProblemsMessage.cs" />
     <Compile Include="RegisterMessage.cs" />
     <Compile Include="RegisterResponseMessage.cs" />
     <Compile Include="Solution.cs" />
