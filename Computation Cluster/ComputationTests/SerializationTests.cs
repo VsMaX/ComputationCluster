@@ -114,5 +114,19 @@ namespace ComputationTests
             var result = serializer.Serialize(divideProblemMessage);
             Assert.AreEqual(result, testData);
         }
+
+        [DeploymentItem(@"XMLTestData\SolutionRequestMessage.xml", "XMLTestData")]
+        [TestMethod]
+        public void SolutionRequestMessageSerialization()
+        {
+            string testData = System.IO.File.ReadAllText(@"XMLTestData\SolutionRequestMessage.xml");
+            var serializer = new ComputationSerializer<SolutionRequestMessage>();
+            var solutionRequestMessage = new SolutionRequestMessage()
+            {
+                Id = 1
+            };
+            var result = serializer.Serialize(solutionRequestMessage);
+            Assert.AreEqual(result, testData);
+        }
     }
 }
