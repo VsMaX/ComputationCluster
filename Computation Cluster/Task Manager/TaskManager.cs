@@ -37,12 +37,34 @@ namespace Task_Manager
             Trace.WriteLine("Response has been deserialized");
         }
 
+        public void SendStatus()
+        {
+            communicationModule.Connect();
+            var testStatusThread = new StatusThread() { HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, ProblemInstanceIdSpecified = true, TaskIdSpecified = true };
+            var statusMessage = new StatusMessage()
+            {
+                Id = 1,
+                Threads = new StatusThread[] { testStatusThread }
+            };
+            var statusMessageString = SerializeMessage(statusMessage);
+            var statusMessageBytes = CommunicationModule.ConvertStringToData(statusMessageString);
+            communicationModule.Connect();
+            communicationModule.SendData(statusMessageBytes);
+            var statusMessageResponse = communicationModule.ReceiveData();
+            Trace.WriteLine("status response: " + statusMessageResponse);
+        }
+
         public string ReceiveDataFromServer()
         {
             communicationModule.Connect();
             var data = communicationModule.ReceiveData();
             Trace.WriteLine("Response: " + data.ToString());
             return data;
+        }
+
+        public void Disconnect()
+        {
+            communicationModule.Disconnect();
         }
 
         public int NodeId { get; set; }

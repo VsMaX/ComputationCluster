@@ -13,8 +13,22 @@ namespace Task_Manager
             var node = new TaskManager("127.0.0.1", 22222);
             Console.ReadKey();
             node.RegisterAtServer();
+
+            var key = Console.ReadKey();
+            switch (key.Key)
+            {
+                case ConsoleKey.S:
+                    node.SendStatus();
+                    break;
+                case ConsoleKey.R:
+                    node.RegisterAtServer();
+                    break;
+                default:
+                    node.Disconnect();
+                    break;
+            }
+
             Console.ReadKey();
-            //node.ReceiveDataFromServer();
         }
     }
 }
