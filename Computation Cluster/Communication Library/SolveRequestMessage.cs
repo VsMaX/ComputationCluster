@@ -10,7 +10,7 @@ using System.Xml.Serialization;
 namespace Communication_Library
 {
     [Serializable]
-    [XmlRoot(ElementName = "SolveRequest")]
+    [XmlRoot(ElementName = "SolveRequest", Namespace = "http://www.mini.pw.edu.pl/ucc/")]
     public class SolveRequestMessage : ComputationMessage
     {
         [XmlElement]

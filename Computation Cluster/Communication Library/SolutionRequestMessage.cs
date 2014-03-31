@@ -8,7 +8,7 @@ using System.Xml.Serialization;
 namespace Communication_Library
 {
     [Serializable]
-    [XmlRoot(ElementName = "SolutionRequest")]
+    [XmlRoot(ElementName = "SolutionRequest", Namespace = "http://www.mini.pw.edu.pl/ucc/")]
     public class SolutionRequestMessage : ComputationMessage
     {
         [XmlElement]
