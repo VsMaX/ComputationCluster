@@ -11,8 +11,16 @@ namespace Task_Manager
         static void Main(string[] args)
         {
             var node = new TaskManager("127.0.0.1", 22222);
-            Console.ReadKey();
-            node.RegisterAtServer();
+            var key = Console.ReadKey();
+            switch (key.Key)
+            {
+                case ConsoleKey.R:
+                    node.RegisterAtServer();
+                    break;
+                case ConsoleKey.S:
+                    node.SendStatus();
+                    break;
+            }
             Console.ReadKey();
         }
     }

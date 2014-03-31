@@ -15,9 +15,13 @@ namespace Computational_Node
         private string serverIp;
         private CommunicationModule communicationModule;
 
+        public ulong NodeId { get; set; }
+        public TimeSpan Timeout { get; set; }
+
         public ComputationnalNode(string serverIp, int serverPort)
         {
             communicationModule = new CommunicationModule(serverIp, serverPort);
+            RegisterAtServer();
         }
 
         public void RegisterAtServer()
@@ -36,9 +40,9 @@ namespace Computational_Node
             Trace.WriteLine("Response: " + response.ToString());
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
             Trace.WriteLine("Response has been deserialized");
+            NodeId = deserializedResponse.Id;
+            Timeout = deserializedResponse.Time;
         }
-
-        public int NodeId { get; set; }
 
         public void SendStatus()
         {
@@ -46,7 +50,7 @@ namespace Computational_Node
             var testStatusThread = new StatusThread() {HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, ProblemInstanceIdSpecified = true, TaskIdSpecified = true};
             var statusMessage = new StatusMessage()
             {
-                Id = 1,
+                Id = NodeId,
                 Threads = new StatusThread[] { testStatusThread }
             };
             var statusMessageString = SerializeMessage(statusMessage);

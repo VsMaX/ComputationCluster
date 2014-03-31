@@ -60,39 +60,5 @@ namespace ComputationTests
             //zapobieganie deadlockowi odbywa sie przy pomocy metody ReceiveAllMessages
             Assert.AreEqual(server.GetUnfinishedTasks().Count, 1);
         }
-
-        [TestMethod]
-        public void CN_Register_To_CS_Test()
-        {
-            var computationalNode = new ComputationnalNode(computationServerIp, computationServerPort);
-            computationalNode.RegisterAtServer();
-            //Assert.AreEqual(computationalNode.NodeId, 1);
-            server.ReceiveAllMessages();
-            Assert.AreEqual(server.ActiveNodes.Count, 1);
-        }
-
-        [TestMethod]
-        public void CS_Send_Problem_To_Task_Manager()
-        {
-            Assert.Fail();
-        }
-
-        [TestMethod]
-        public void CN_Send_Solved_Subtask_To_CS()
-        {
-            Assert.Fail();
-        }
-
-        [TestMethod]
-        public void CS_Divide_Subtasks_Among_CNs()
-        {
-            Assert.Fail();
-        }
-
-        [TestMethod]
-        public void CS_Send_Solution_To_CC()
-        {
-            Assert.Fail();
-        }
     }
 }
