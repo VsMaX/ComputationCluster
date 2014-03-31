@@ -23,6 +23,8 @@ namespace Computational_Server
         private int openConnectionsCount;
         private int activeNodeCount;
 
+
+        public static ManualResetEvent allDone = new ManualResetEvent(false);
         private ConcurrentQueue<SolveRequestMessage> solveRequestMessageQueue;
         public ConcurrentBag<NodeEntry> ActiveNodes { get; set; }
         Socket handler;
@@ -42,61 +44,84 @@ namespace Computational_Server
 
         public void StartListening()
         {
-            //TODO przepisac ladnie i wydzielic mniejsze funkcje
             Socket sListener = null;
-            IPEndPoint ipEndPoint = null;
-            try
+            do
             {
-                Trace.WriteLine("");
+                //TODO przepisac ladnie i wydzielic mniejsze funkcje
 
-                // Creates one SocketPermission object for access restrictions
-                var permission = new SocketPermission(
-                    NetworkAccess.Accept, // Allowed to accept connections 
-                    TransportType.Tcp, // Defines transport types 
-                    serverIPAddress, // The IP addresses of local host 
-                    SocketPermission.AllPorts // Specifies all ports 
-                    );
+                IPEndPoint ipEndPoint = null;
+                try
+                {
+                    Trace.WriteLine("");
 
-                // Ensures the code to have permission to access a Socket 
-                permission.Demand();
+                    // Creates one SocketPermission object for access restrictions
+                    var permission = new SocketPermission(
+                        NetworkAccess.Accept, // Allowed to accept connections 
+                        TransportType.Tcp, // Defines transport types 
+                        serverIPAddress, // The IP addresses of local host 
+                        SocketPermission.AllPorts // Specifies all ports 
+                        );
 
-                // Resolves a host name to an IPHostEntry instance 
-                //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.38");
+                    // Ensures the code to have permission to access a Socket 
+                    permission.Demand();
 
-                //byte[] ip_byte = new byte[ip_string.Length * sizeof(char)];
-                //System.Buffer.BlockCopy(ip_string.ToCharArray(), 0, ip_byte, 0, ip_byte.Length);
-                // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = IPAddress.Parse(serverIPAddress);
+                    // Resolves a host name to an IPHostEntry instance 
+                    //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.38");
 
-                // Creates a network endpoint 
-                ipEndPoint = new IPEndPoint(ipAddr, port);
+                    //byte[] ip_byte = new byte[ip_string.Length * sizeof(char)];
+                    //System.Buffer.BlockCopy(ip_string.ToCharArray(), 0, ip_byte, 0, ip_byte.Length);
+                    // Gets first IP address associated with a localhost 
+                    IPAddress ipAddr = IPAddress.Parse(serverIPAddress);
 
-                // Create one Socket object to listen the incoming connection 
-                sListener = new Socket(
-                    ipAddr.AddressFamily,
-                    SocketType.Stream,
-                    ProtocolType.Tcp
-                    );
+                    // Creates a network endpoint 
+                    ipEndPoint = new IPEndPoint(ipAddr, port);
 
-                // Associates a Socket with a local endpoint 
-                sListener.Bind(ipEndPoint);
-                Trace.WriteLine("Server listening");
-            }
-            catch (Exception ex) { Trace.WriteLine(ex.ToString()); }
+                    // Create one Socket object to listen the incoming connection 
+                    sListener = new Socket(
+                        ipAddr.AddressFamily,
+                        SocketType.Stream,
+                        ProtocolType.Tcp
+                        );
 
-            try
-            {
-                // Places a Socket in a listening state and specifies the maximum 
-                // Length of the pending connections queue 
-                sListener.Listen(100);
+                    // Associates a Socket with a local endpoint 
+                    sListener.Bind(ipEndPoint);
+                    Trace.WriteLine("Server listening");
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine(ex.ToString());
+                }
 
-                // Begins an asynchronous operation to accept an attempt 
-                AsyncCallback aCallback = new AsyncCallback(AcceptCallback);
-                sListener.BeginAccept(aCallback, sListener);
+                try
+                {
+                    // Places a Socket in a listening state and specifies the maximum 
+                    // Length of the pending connections queue 
+                    sListener.Listen(100);
 
-                Trace.WriteLine("Server is now listening on " + ipEndPoint.Address + " port: " + ipEndPoint.Port);
-            }
-            catch (Exception ex) { Trace.WriteLine(ex.ToString()); }
+                    while (true)
+                    {
+                        // Set the event to nonsignaled state.
+                        allDone.Reset();
+
+                        // Start an asynchronous socket to listen for connections.
+                        Console.WriteLine("Waiting for a connection...");
+                        sListener.BeginAccept(
+                            new AsyncCallback(AcceptCallback),
+                            sListener);
+
+                        allDone.WaitOne();
+                        // Wait until a connection is made before continuing.
+                    }
+
+                    
+
+                    Trace.WriteLine("Server is now listening on " + ipEndPoint.Address + " port: " + ipEndPoint.Port);
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine(ex.ToString());
+                }
+            } while (sListener.IsBound);
         }
 
         private void AcceptCallback(IAsyncResult ar)
@@ -105,6 +130,7 @@ namespace Computational_Server
             //TODO tutaj powinna sie znajdowac logika odpowiadajaca za rozpoznawanie wiadomosci przychodzacych
             //TODO kazda wiadomosc powinna miec swoja funkcje ktora ja obsluguje
             Trace.WriteLine("Accepted callback");
+            allDone.Set();
             Socket listener = null;
             Thread.Sleep(2000);
             // A new Socket to handle remote host communication 
@@ -124,7 +150,7 @@ namespace Computational_Server
                 object[] obj = new object[2];
                 obj[0] = buffer;
                 obj[1] = handler;
-
+                
                 // Begins to asynchronously receive data 
                 handler.BeginReceive(
                     buffer,        // An array of type Byt for received data 
@@ -271,6 +297,10 @@ namespace Computational_Server
                         return SerializeMessage<DivideProblemMessage>(dp);
                     }
                     return "";
+                    break;
+                default:
+                    Trace.WriteLine("Received another status");
+                    Trace.WriteLine("XML Data: " + message);
                     break;
             }
             return String.Empty;

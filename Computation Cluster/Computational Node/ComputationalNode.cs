@@ -42,6 +42,7 @@ namespace Computational_Node
             Trace.WriteLine("Response has been deserialized");
             NodeId = deserializedResponse.Id;
             Timeout = deserializedResponse.Time;
+            communicationModule.Disconnect();
         }
 
         public void SendStatus()

@@ -41,6 +41,7 @@ namespace Task_Manager
             this.NodeId = deserializedResponse.Id;
             this.Timeout = deserializedResponse.Time;
             Trace.WriteLine("Response has been deserialized");
+            communicationModule.Disconnect();
         }
 
         public void SendStatus()
@@ -58,6 +59,7 @@ namespace Task_Manager
             communicationModule.SendData(statusMessageBytes);
             var statusMessageResponse = communicationModule.ReceiveData();
             Trace.WriteLine("status response: " + statusMessageResponse);
+            communicationModule.Disconnect();
         }
 
         public string ReceiveDataFromServer()
@@ -68,12 +70,20 @@ namespace Task_Manager
             return data;
         }
 
-
         public void Disconnect()
         {
             communicationModule.Disconnect();
         }
 
-
+        public void DivideProblem()
+        {
+            communicationModule.Connect();
+            SolvePartialProblemsPartialProblem sp = new SolvePartialProblemsPartialProblem() { Data = new byte[] { 1, 2, 3 }, TaskId = 4 };
+            var partialproblems = new PartialProblemsMessage() { Id = 2, CommonData = new byte[] { 1, 2, 3 }, PartialProblems = new SolvePartialProblemsPartialProblem[] { sp }, ProblemType = "TSP", SolvingTimeout = 30, SolvingTimeoutSpecified = true };
+            var msg = SerializeMessage<PartialProblemsMessage>(partialproblems);
+            var msgBytes = CommunicationModule.ConvertStringToData(msg);
+            communicationModule.SendData(msgBytes);
+            communicationModule.Disconnect();
+        }
     }
 }

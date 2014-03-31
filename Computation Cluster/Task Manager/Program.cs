@@ -21,6 +21,8 @@ namespace Task_Manager
                     node.SendStatus();
                     break;
             }
+
+            node.DivideProblem();
             Console.ReadKey();
         }
     }

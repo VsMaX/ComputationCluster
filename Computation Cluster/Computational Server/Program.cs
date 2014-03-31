@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -16,7 +17,9 @@ namespace Computational_Server
             Console.WriteLine();
             var computationServer = new ComputationServer("127.0.0.1", 22222, new TimeSpan(0,0,30));
             computationServer.StartListening();
+            Trace.WriteLine("Server stopping");
             computationServer.StopListening();
+            Trace.WriteLine("Server stopped");
             Console.ReadKey();
         }
     }
