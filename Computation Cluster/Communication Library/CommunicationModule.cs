@@ -82,6 +82,8 @@ namespace Communication_Library
 
         public void Disconnect()
         {
+            if (senderSock == null)
+                return;
             // Disables sends and receives on a Socket. 
             senderSock.Shutdown(SocketShutdown.Both);
 

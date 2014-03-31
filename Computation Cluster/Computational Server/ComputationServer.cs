@@ -236,6 +236,11 @@ namespace Computational_Server
                     Solution s = new Solution() { ComputationsTime = 100, Data = new byte[] { 0, 0, 10 }, TaskId = 23, TaskIdSpecified = true, TimeoutOccured = true, Type = SolutionType.Final };
                     var solveSolutions = new SolutionsMessage() { Id = 1, ProblemType="TSP", CommonData= new byte[]{0,0,22}, Solutions = new Solution[]{s} };
                     return SerializeMessage<SolutionsMessage>(solveSolutions);
+                case "Status":
+                    Trace.WriteLine("Received Status");
+                    var deserializedStatusMessage = DeserializeMessage<StatusMessage>(message);
+                    //TODO odswiezyc czas zycia CNa na liscie
+                    return "";
                     break;
             }
             return String.Empty;
