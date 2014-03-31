@@ -57,5 +57,31 @@ namespace ComputationTests
             var result = serializer.Serialize(registerResponseMessage);
             Assert.AreEqual(result, testData);
         }
+
+        [DeploymentItem(@"XMLTestData\StatusMessage.xml", "XMLTestData")]
+        [TestMethod]
+        public void StatusMessageSerialization()
+        {
+            string testData = System.IO.File.ReadAllText(@"XMLTestData\StatusMessage.xml");
+            var serializer = new ComputationSerializer<StatusMessage>();
+
+            StatusThread st = new StatusThread(){
+                State = StatusThreadState.Idle,
+                HowLong = 1,
+                ProblemInstanceId = 1,
+                ProblemInstanceIdSpecified = true,
+                TaskId = 5,
+                TaskIdSpecified = true,
+                ProblemType = "TSP"
+            };
+
+            var statusMessage = new StatusMessage()
+            {
+                Id = 1,
+                Threads = new StatusThread[]{st}
+            };
+            var result = serializer.Serialize(statusMessage);
+            Assert.AreEqual(result, testData);
+        }
     }
 }
