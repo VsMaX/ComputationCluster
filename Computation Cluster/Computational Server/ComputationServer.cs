@@ -229,6 +229,14 @@ namespace Computational_Server
                     var solveRequestResponse = new SolveRequestResponseMessage() {Id = 1};
                     return SerializeMessage<SolveRequestResponseMessage>(solveRequestResponse);
                     break;
+                case "SolutionRequest":
+                    Trace.WriteLine("Received SolutionRequest");
+                    var deserializedSolutionRequestMessage = DeserializeMessage<SolutionRequestMessage>(message);
+                    //solveRequestMessageQueue.Enqueue(deserializedSolutionRequestMessage);
+                    Solution s = new Solution() { ComputationsTime = 100, Data = new byte[] { 0, 0, 10 }, TaskId = 23, TaskIdSpecified = true, TimeoutOccured = true, Type = SolutionType.Final };
+                    var solveSolutions = new SolutionsMessage() { Id = 1, ProblemType="TSP", CommonData= new byte[]{0,0,22}, Solutions = new Solution[]{s} };
+                    return SerializeMessage<SolutionsMessage>(solveSolutions);
+                    break;
             }
             return String.Empty;
         }

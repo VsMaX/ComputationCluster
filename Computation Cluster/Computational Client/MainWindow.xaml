@@ -16,6 +16,7 @@
                 </TransformGroup>
             </TextBox.RenderTransform>
         </TextBox>
+        <Button x:Name="button2" Content="SendSolutionRequest" HorizontalAlignment="Left" Height="23" Margin="72,200,0,0" VerticalAlignment="Top" Width="134" Click="Button2_Click"/>
 
     </Grid>
 </Window>

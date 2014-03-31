@@ -37,6 +37,20 @@ namespace Computational_Client
             button1.ClickMode = ClickMode.Release;
             string sr2 = computationalClient.ReceiveDataFromServer();
             potwierdzenie.Text = sr2;
+
+
+        }
+
+        private void Button2_Click(object sender, RoutedEventArgs e)
+        {
+            var computationalClient = new ComputationClient("127.0.0.1", 22222);
+            byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
+
+            var solutionRequest = new SolutionRequestMessage() { Id = 4 };
+            computationalClient.SendSolutionRequest(solutionRequest);
+
+            string sr3 = computationalClient.ReceiveDataFromServer();
+            potwierdzenie.Text = sr3; 
         }
     }
 }

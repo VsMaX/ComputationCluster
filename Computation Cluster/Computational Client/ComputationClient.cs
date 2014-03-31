@@ -36,6 +36,23 @@ namespace Computational_Client
             }
         }
 
+        public void SendSolutionRequest(SolutionRequestMessage solutionRequestMessage)
+        {
+            try
+            {
+                communicationModule.Connect();
+                var serializer = new ComputationSerializer<SolutionRequestMessage>();
+                var message = serializer.Serialize(solutionRequestMessage);
+                byte[] byteMessage = Encoding.UTF8.GetBytes(message);
+                communicationModule.SendData(byteMessage);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.ToString());
+                //TODO logowanie
+            }
+        }
+
         public string ReceiveDataFromServer()
         {
             communicationModule.Connect();
