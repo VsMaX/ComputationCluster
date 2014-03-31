@@ -212,7 +212,7 @@ namespace Computational_Server
                         var response = new RegisterResponseMessage()
                         {
                             Id = (ulong)nodeEntry.ID,
-                            Timeout = DefaultTimeout
+                            Time = DefaultTimeout
                         };
                         return SerializeMessage<RegisterResponseMessage>(response);
                     }

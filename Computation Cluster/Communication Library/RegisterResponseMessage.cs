@@ -31,8 +31,7 @@ namespace Communication_Library
             }
             set 
             {
-                Time = value;
-                Timeout = Time.ToString();
+                Timeout = value.ToString(@"hh\:mm\:ss");
             }
         }
     }
