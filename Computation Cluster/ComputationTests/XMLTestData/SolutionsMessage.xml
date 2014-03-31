@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Solutions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ProblemType>TSP</ProblemType>
+  <Id>1</Id>
+  <CommonData>AAAZ</CommonData>
+  <SolutionsSolution>
+    <Solution>
+      <TaskId>20</TaskId>
+      <TaskIdSpecified>true</TaskIdSpecified>
+      <TimeoutOccured>true</TimeoutOccured>
+      <Type>Final</Type>
+      <ComputationsTime>10</ComputationsTime>
+      <Data>AAAK</Data>
+    </Solution>
+  </SolutionsSolution>
+</Solutions>
