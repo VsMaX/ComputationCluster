@@ -42,16 +42,15 @@
     <Compile Include="ComputationMessage.cs" />
     <Compile Include="ComputationSerializer.cs" />
     <Compile Include="DivideProblem.cs" />
+    <Compile Include="DivideProblemMessage.cs" />
     <Compile Include="PartialProblem.cs" />
     <Compile Include="RegisterMessage.cs" />
     <Compile Include="RegisterResponseMessage.cs" />
     <Compile Include="Solution.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SolutionRequest.cs" />
-    <Compile Include="SolveRequest.cs" />
     <Compile Include="SolveRequestMessage.cs" />
-    <Compile Include="SolveRequestResponse.cs" />
-    <Compile Include="Status.cs" />
+    <Compile Include="SolveRequestResponseMessage.cs" />
     <Compile Include="StatusMessage.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

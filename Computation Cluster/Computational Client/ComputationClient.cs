@@ -70,7 +70,7 @@ namespace Computational_Client
             }
         }
 
-        public SolveRequest ReceiveDataFromServer()
+        public SolveRequestMessage ReceiveDataFromServer()
         {
             //try
             //{

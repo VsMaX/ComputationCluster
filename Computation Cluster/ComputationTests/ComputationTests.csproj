@@ -54,7 +54,6 @@
     <Compile Include="ComputationClientTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SerializationTests.cs" />
-    <Compile Include="TestSerializeDeserialize.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Communication Library\Communication Library.csproj">
@@ -78,6 +77,9 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="XMLTestData\DivideProblemMessage.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="XMLTestData\RegisterMessage.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -85,6 +87,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="XMLTestData\SolveRequestMessage.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="XMLTestData\SolveRequestResponseMessage.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="XMLTestData\StatusMessage.xml">
