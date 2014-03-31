@@ -37,6 +37,14 @@ namespace Task_Manager
             Trace.WriteLine("Response has been deserialized");
         }
 
+        public string ReceiveDataFromServer()
+        {
+            communicationModule.Connect();
+            var data = communicationModule.ReceiveData();
+            Trace.WriteLine("Response: " + data.ToString());
+            return data;
+        }
+
         public int NodeId { get; set; }
     }
 

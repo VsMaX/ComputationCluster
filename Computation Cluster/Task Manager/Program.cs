@@ -14,6 +14,7 @@ namespace Task_Manager
             Console.ReadKey();
             node.RegisterAtServer();
             Console.ReadKey();
+            //node.ReceiveDataFromServer();
         }
     }
 }
