@@ -14,9 +14,13 @@ namespace Task_Manager
         private string serverIp;
         private CommunicationModule communicationModule;
 
+        public ulong NodeId { get; set; }
+        public TimeSpan Timeout { get; set; }
+
         public TaskManager(string serverIp, int serverPort)
         {
             communicationModule = new CommunicationModule(serverIp, serverPort);
+            RegisterAtServer();
         }
 
         public void RegisterAtServer()
@@ -34,6 +38,8 @@ namespace Task_Manager
             var response = communicationModule.ReceiveData();
             Trace.WriteLine("Response: " + response.ToString());
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
+            this.NodeId = deserializedResponse.Id;
+            this.Timeout = deserializedResponse.Time;
             Trace.WriteLine("Response has been deserialized");
         }
 
@@ -43,7 +49,7 @@ namespace Task_Manager
             var testStatusThread = new StatusThread() { HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, ProblemInstanceIdSpecified = true, TaskIdSpecified = true };
             var statusMessage = new StatusMessage()
             {
-                Id = 1,
+                Id = NodeId,
                 Threads = new StatusThread[] { testStatusThread }
             };
             var statusMessageString = SerializeMessage(statusMessage);
@@ -62,12 +68,12 @@ namespace Task_Manager
             return data;
         }
 
+
         public void Disconnect()
         {
             communicationModule.Disconnect();
         }
 
-        public int NodeId { get; set; }
-    }
 
+    }
 }
