@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Status xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Id>1</Id>
+  <Threads>
+    <Thread>
+      <State>Idle</State>
+      <HowLong>1</HowLong>
+      <ProblemInstanceId>1</ProblemInstanceId>
+      <ProblemInstanceIdSpecified>true</ProblemInstanceIdSpecified>
+      <TaskId>5</TaskId>
+      <TaskIdSpecified>true</TaskIdSpecified>
+      <ProblemType>TSP</ProblemType>
+    </Thread>
+  </Threads>
+</Status>
