@@ -8,7 +8,7 @@ using System.Xml.Serialization;
 namespace Communication_Library
 {
     [Serializable]
-    [XmlRoot(ElementName = "Status")]
+    [XmlRoot(ElementName = "Status", Namespace = "http://www.mini.pw.edu.pl/ucc/")]
     public class StatusMessage : ComputationMessage
     {
         [XmlElement]
@@ -18,7 +18,6 @@ namespace Communication_Library
         public StatusThread[] Threads { get; set; }
     }
 
-
     public partial class StatusThread
     {
 
@@ -27,8 +26,6 @@ namespace Communication_Library
         public ulong HowLong { get; set; }
 
         public ulong ProblemInstanceId { get; set; }
-
-        public bool ProblemInstanceIdSpecified { get; set; }
 
         public ulong TaskId { get; set; }
 

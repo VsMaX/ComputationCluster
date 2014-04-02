@@ -48,7 +48,7 @@ namespace Computational_Node
         public void SendStatus()
         {
             communicationModule.Connect();
-            var testStatusThread = new StatusThread() {HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, ProblemInstanceIdSpecified = true, TaskIdSpecified = true};
+            var testStatusThread = new StatusThread() {HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, TaskIdSpecified = true};
             var statusMessage = new StatusMessage()
             {
                 Id = NodeId,

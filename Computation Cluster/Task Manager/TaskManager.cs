@@ -41,13 +41,13 @@ namespace Task_Manager
             this.NodeId = deserializedResponse.Id;
             this.Timeout = deserializedResponse.Time;
             Trace.WriteLine("Response has been deserialized");
-            communicationModule.Disconnect();
+            //communicationModule.Disconnect();
         }
 
         public void SendStatus()
         {
             communicationModule.Connect();
-            var testStatusThread = new StatusThread() { HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, ProblemInstanceIdSpecified = true, TaskIdSpecified = true };
+            var testStatusThread = new StatusThread() { HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, TaskIdSpecified = true };
             var statusMessage = new StatusMessage()
             {
                 Id = NodeId,
@@ -59,7 +59,7 @@ namespace Task_Manager
             communicationModule.SendData(statusMessageBytes);
             var statusMessageResponse = communicationModule.ReceiveData();
             Trace.WriteLine("status response: " + statusMessageResponse);
-            communicationModule.Disconnect();
+            //communicationModule.Disconnect();
         }
 
         public string ReceiveDataFromServer()
@@ -72,7 +72,7 @@ namespace Task_Manager
 
         public void Disconnect()
         {
-            communicationModule.Disconnect();
+            //communicationModule.Disconnect();
         }
 
         public void DivideProblem()
@@ -83,7 +83,7 @@ namespace Task_Manager
             var msg = SerializeMessage<PartialProblemsMessage>(partialproblems);
             var msgBytes = CommunicationModule.ConvertStringToData(msg);
             communicationModule.SendData(msgBytes);
-            communicationModule.Disconnect();
+            //communicationModule.Disconnect();
         }
     }
 }

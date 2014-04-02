@@ -69,7 +69,6 @@ namespace ComputationTests
                 State = StatusThreadState.Idle,
                 HowLong = 1,
                 ProblemInstanceId = 1,
-                ProblemInstanceIdSpecified = true,
                 TaskId = 5,
                 TaskIdSpecified = true,
                 ProblemType = "TSP"
