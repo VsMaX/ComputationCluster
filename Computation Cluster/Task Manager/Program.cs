@@ -10,7 +10,7 @@ namespace Task_Manager
     {
         static void Main(string[] args)
         {
-            var node = new TaskManager("192.168.110.63", 6666);
+            var node = new TaskManager("127.0.0.1", 8080);
             var key = Console.ReadKey();
             switch (key.Key)
             {
