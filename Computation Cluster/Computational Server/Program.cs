@@ -15,7 +15,7 @@ namespace Computational_Server
         static void Main(string[] args)
         {
             Console.WriteLine();
-            var computationServer = new ComputationServer("192.168.111.154", 22222, new TimeSpan(0,0,30));
+            var computationServer = new ComputationServer("127.0.0.1", 8080, new TimeSpan(0,0,30));
             computationServer.StartListening();
             Trace.WriteLine("Server stopping");
             computationServer.StopListening();

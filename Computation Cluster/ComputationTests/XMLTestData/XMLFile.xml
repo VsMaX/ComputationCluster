@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Register xmlns="http://www.mini.pw.edu.pl/ucc/">
+  <Type>ComputationalNode</Type>
+  <SolvableProblems>
+    <ProblemName>test1</ProblemName>
+    <ProblemName>test2</ProblemName>
+  </SolvableProblems>
+  <ParallelThreads>0</ParallelThreads>
+</Register>
