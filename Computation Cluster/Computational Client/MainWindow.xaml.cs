@@ -77,12 +77,22 @@ namespace Computational_Client
                 //byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
                 var serializer = new ComputationSerializer<SolveRequestMessage>();
                 //var sr = new SolveRequestMessage() { Data = null, ProblemType = "Ciężki problem", SolvingTimeout = 10000 };
-                SolveRequestMessage sr = serializer.Deserialize(content);
-                computationalClient.SendSolveRequest(sr);
+                try
+                {
+                    SolveRequestMessage sr = serializer.Deserialize(content);
+                    computationalClient.SendSolveRequest(sr);
+
+                    string sr2 = computationalClient.ReceiveDataFromServer();
+                    potwierdzenie.Text = sr2;
+                }
+                catch (SystemException ex)
+                {
+                    //TODO exception handling
+                    MessageBox.Show("Wczytano niewłaściwy plik", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
 
                 browse.ClickMode = ClickMode.Release;
-                string sr2 = computationalClient.ReceiveDataFromServer();
-                potwierdzenie.Text = sr2;
+
             }
 
         }
