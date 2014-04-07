@@ -22,17 +22,21 @@ namespace Computational_Server
         private object solveRequestMessagesLock = new object();
         private int openConnectionsCount;
         private int activeNodeCount;
+        private Thread listeningThread;
 
 
         public static ManualResetEvent allDone = new ManualResetEvent(false);
         private ConcurrentQueue<SolveRequestMessage> solveRequestMessageQueue;
         public ConcurrentBag<NodeEntry> ActiveNodes { get; set; }
         Socket handler;
+        private CancellationTokenSource cancellationToken;
+
 
         public readonly TimeSpan DefaultTimeout;
 
         public ComputationServer(string _ipAddress, int _port, TimeSpan nodeTimeout)
         {
+            cancellationToken = new CancellationTokenSource();
             solveRequestMessageQueue = new ConcurrentQueue<SolveRequestMessage>();
             ActiveNodes = new ConcurrentBag<NodeEntry>();
             serverIPAddress = _ipAddress;
@@ -43,6 +47,12 @@ namespace Computational_Server
         }
 
         public void StartListening()
+        {
+            listeningThread = new Thread(() => StartListeningThread(cancellationToken));
+            listeningThread.Start();
+        }
+
+        private void StartListeningThread(CancellationTokenSource cancellationToken)
         {
             Socket sListener = null;
             do
@@ -98,30 +108,26 @@ namespace Computational_Server
                     // Length of the pending connections queue 
                     sListener.Listen(100);
 
+                    Trace.WriteLine("Server is now listening on " + ipEndPoint.Address + " port: " + ipEndPoint.Port);
                     while (true)
                     {
                         // Set the event to nonsignaled state.
                         allDone.Reset();
 
                         // Start an asynchronous socket to listen for connections.
-                        Console.WriteLine("Waiting for a connection...");
+                        Trace.WriteLine("Waiting for a connection...");
                         sListener.BeginAccept(
                             new AsyncCallback(AcceptCallback),
                             sListener);
 
-                        allDone.WaitOne();
-                        // Wait until a connection is made before continuing.
+                        allDone.WaitOne(new TimeSpan(0, 0, 10));
                     }
-
-                    
-
-                    Trace.WriteLine("Server is now listening on " + ipEndPoint.Address + " port: " + ipEndPoint.Port);
                 }
                 catch (Exception ex)
                 {
                     Trace.WriteLine(ex.ToString());
                 }
-            } while (sListener.IsBound);
+            } while (!cancellationToken.IsCancellationRequested);
         }
 
         private void AcceptCallback(IAsyncResult ar)
@@ -130,12 +136,12 @@ namespace Computational_Server
             //TODO tutaj powinna sie znajdowac logika odpowiadajaca za rozpoznawanie wiadomosci przychodzacych
             //TODO kazda wiadomosc powinna miec swoja funkcje ktora ja obsluguje
             Trace.WriteLine("Accepted callback");
-            allDone.Set();
             Socket listener = null;
             Thread.Sleep(2000);
             // A new Socket to handle remote host communication 
             try
             {
+                allDone.Set();
                 // Receiving byte array 
                 byte[] buffer = new byte[1024];
                 // Get Listening Socket object 
@@ -170,7 +176,15 @@ namespace Computational_Server
 
         public void StopListening()
         {
-            //throw new NotImplementedException();//TODO spr czy wystarczy zamknac nasliuchiwanie, zrobic dispose strumieni, usunac niepotrzebne obiekty
+            cancellationToken.Cancel();
+            try
+            {
+                listeningThread.Join(new TimeSpan(0, 1, 0));
+            }
+            catch (Exception ex)
+            {
+                //TODO logging
+            }
         }
 
         public void ReceiveCallback(IAsyncResult ar)
@@ -190,7 +204,6 @@ namespace Computational_Server
 
                 // Received message 
                 string content = string.Empty;
-
 
                 // The number of bytes received. 
                 int bytesRead = handler.EndReceive(ar);

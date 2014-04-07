@@ -17,6 +17,7 @@ namespace Computational_Server
             Console.WriteLine();
             var computationServer = new ComputationServer("127.0.0.1", 8080, new TimeSpan(0,0,30));
             computationServer.StartListening();
+            Console.ReadKey();
             Trace.WriteLine("Server stopping");
             computationServer.StopListening();
             Trace.WriteLine("Server stopped");
