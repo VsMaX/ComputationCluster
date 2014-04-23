@@ -13,7 +13,7 @@ namespace Task_Manager
         private int serverPort;
         private string serverIp;
         private CommunicationModule communicationModule;
-
+        public TSP tsp;
         public ulong NodeId { get; set; }
         public TimeSpan Timeout { get; set; }
 
@@ -58,7 +58,11 @@ namespace Task_Manager
             communicationModule.Connect();
             communicationModule.SendData(statusMessageBytes);
             var statusMessageResponse = communicationModule.ReceiveData();
+            if (statusMessageResponse.Length > 0)
+                DivideProblem(statusMessageResponse);
+         
             Trace.WriteLine("status response: " + statusMessageResponse);
+            ReceiveDataFromServer();
             //communicationModule.Disconnect();
         }
 
@@ -66,7 +70,9 @@ namespace Task_Manager
         {
             communicationModule.Connect();
             var data = communicationModule.ReceiveData();
+            
             Trace.WriteLine("Response: " + data.ToString());
+            
             return data;
         }
 
@@ -75,14 +81,29 @@ namespace Task_Manager
             //communicationModule.Disconnect();
         }
 
-        public void DivideProblem()
+        public void DivideProblem(string statusMessageResponse)
         {
-            communicationModule.Connect();
-            SolvePartialProblemsPartialProblem sp = new SolvePartialProblemsPartialProblem() { Data = new byte[] { 1, 2, 3 }, TaskId = 4 };
-            var partialproblems = new PartialProblemsMessage() { Id = 2, CommonData = new byte[] { 1, 2, 3 }, PartialProblems = new SolvePartialProblemsPartialProblem[] { sp }, ProblemType = "TSP", SolvingTimeout = 30, SolvingTimeoutSpecified = true };
-            var msg = SerializeMessage<PartialProblemsMessage>(partialproblems);
-            var msgBytes = CommunicationModule.ConvertStringToData(msg);
-            communicationModule.SendData(msgBytes);
+            var serializer = new ComputationSerializer<DivideProblemMessage>();
+            DivideProblemMessage dpm = serializer.Deserialize(statusMessageResponse);
+
+            tsp = new TSP(dpm.Data);
+            tsp.DivideProblem((int)dpm.ComputationalNodes);
+            SolvePartialProblemsPartialProblem[] solvepp = new SolvePartialProblemsPartialProblem[tsp.PartialProblems.Length];
+
+
+            for (int i = 0; i < tsp.PartialProblems.Length; i++)
+            {
+                solvepp[i] = new SolvePartialProblemsPartialProblem() { Data = tsp.PartialProblems[i], TaskId = (ulong)i };    
+            }
+
+                communicationModule.Connect();
+           
+            //SolvePartialProblemsPartialProblem sp = new SolvePartialProblemsPartialProblem() { Data = new byte[] { 1, 2, 3 }, TaskId = 4 };
+            var partialproblems = new PartialProblemsMessage() { Id = dpm.Id, CommonData = dpm.Data, PartialProblems = solvepp, ProblemType = tsp.Name, SolvingTimeout = 30, SolvingTimeoutSpecified = true };
+            //var msg = SerializeMessage<PartialProblemsMessage>(partialproblems);
+            //var msgBytes = CommunicationModule.ConvertStringToData(msg);
+            //communicationModule.SendData(msgBytes);
+
             //communicationModule.Disconnect();
         }
     }

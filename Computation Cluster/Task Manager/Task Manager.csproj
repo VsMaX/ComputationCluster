@@ -39,11 +39,15 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="UCCTaskSolver">
+      <HintPath>C:\Users\Piotr\Downloads\UCCv.1.1\UCCv1.1\UCCTaskSolver.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TaskManager.cs" />
+    <Compile Include="TSP.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
