@@ -35,14 +35,14 @@ namespace Computational_Node
             var messageString = SerializeMessage(registerMessage);
             var messageBytes = CommunicationModule.ConvertStringToData(messageString);
             communicationModule.Connect();
-            communicationModule.SendData(messageBytes);
+            //communicationModule.SendData(messageBytes);
             var response = communicationModule.ReceiveData();
             Trace.WriteLine("Response: " + response.ToString());
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
             Trace.WriteLine("Response has been deserialized");
             NodeId = deserializedResponse.Id;
             Timeout = deserializedResponse.TimeoutTimeSpan;
-            communicationModule.Disconnect();
+            //communicationModule.Disconnect();
         }
 
         public void SendStatus()
@@ -57,14 +57,14 @@ namespace Computational_Node
             var statusMessageString = SerializeMessage(statusMessage);
             var statusMessageBytes = CommunicationModule.ConvertStringToData(statusMessageString);
             communicationModule.Connect();
-            communicationModule.SendData(statusMessageBytes);
+            //communicationModule.SendData(statusMessageBytes);
             var statusMessageResponse = communicationModule.ReceiveData();
             Trace.WriteLine("status response: " + statusMessageResponse);
         }
 
         public void Disconnect()
         {
-            communicationModule.Disconnect();
+            //communicationModule.Disconnect();
         }
     }
 }

@@ -33,8 +33,8 @@ namespace Communication_Library
 
         public void SetupListening()
         {
-            do
-            {
+            //do
+            //{
                 try
                 {
                     Trace.WriteLine("");
@@ -44,8 +44,8 @@ namespace Communication_Library
                 {
                     Trace.WriteLine(ex.ToString());
                 }
-            }
-            while (this.socket.IsBound);
+            //}
+            //while (this.socket.IsBound);
         }
 
         private void SetSocketForListening()
@@ -177,7 +177,7 @@ namespace Communication_Library
         {
             try
             {
-                this.socket.ReceiveTimeout = 3000;
+                //this.socket.ReceiveTimeout = 3000;
                 byte[] buffer = new byte[1024];
                 int bytesRec = 0;
 
@@ -185,24 +185,26 @@ namespace Communication_Library
                 String theMessageToReceive = String.Empty;
 
                 // Read the data till data isn't available 
-                while (this.socket.Available > 0)
-                {
+                //while (this.socket.Available > 0)
+                //{
                     bytesRec = this.socket.Receive(buffer);
                     theMessageToReceive += Encoding.UTF8.GetString(buffer, 0, bytesRec);
-                }
-
+                    Trace.WriteLine("Received data: " + theMessageToReceive);
+                //}
                 //Set default value
-                this.socket.ReceiveTimeout = 0;
+                //this.socket.ReceiveTimeout = 0;
                 return theMessageToReceive;
             }
             catch(SocketException ex)
             {
                 //Set default value
-                this.socket.ReceiveTimeout = 0;
+                //this.socket.ReceiveTimeout = 0;
+                Trace.WriteLine(ex.ToString());
                 return String.Empty;
             }
             catch (Exception ex)
             {
+                Trace.WriteLine(ex.ToString());
                 throw ex;
             }
         }

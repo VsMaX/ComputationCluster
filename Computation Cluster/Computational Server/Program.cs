@@ -15,14 +15,14 @@ namespace Computational_Server
     {
         static void Main(string[] args)
         {
-            //Console.WriteLine();
-            //var computationServer = new ComputationServer();
-            //computationServer.StartListeningThread();
-            //Console.ReadKey();
-            //Trace.WriteLine("Server stopping");
-            //computationServer.StopListening();
-            //Trace.WriteLine("Server stopped");
-            //Console.ReadKey();
+            Console.WriteLine();
+            var computationServer = new ComputationServer(new TimeSpan(0,0,10), new CommunicationModule("127.0.0.1", 5555));
+            computationServer.StartServer();
+            Console.ReadKey();
+            Trace.WriteLine("Server stopping");
+            computationServer.StopServer();
+            Trace.WriteLine("Server stopped");
+            Console.ReadKey();
         }
     }
 }

@@ -27,7 +27,7 @@ namespace Computational_Client
                 var serializer = new ComputationSerializer<SolveRequestMessage>();
                 var message = serializer.Serialize(solveRequestMessage);
                 byte[] byteMessage = Encoding.UTF8.GetBytes(message);
-                communicationModule.SendData(byteMessage);
+                //communicationModule.SendData(byteMessage);
             }
             catch (Exception ex)
             {
@@ -44,7 +44,7 @@ namespace Computational_Client
                 var serializer = new ComputationSerializer<SolutionRequestMessage>();
                 var message = serializer.Serialize(solutionRequestMessage);
                 byte[] byteMessage = Encoding.UTF8.GetBytes(message);
-                communicationModule.SendData(byteMessage);
+                //communicationModule.SendData(byteMessage);
             }
             catch (Exception ex)
             {

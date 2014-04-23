@@ -22,7 +22,7 @@ namespace Task_Manager
                     break;
             }
 
-            node.DivideProblem();
+            //node.DivideProblem();
             Console.ReadKey();
         }
     }

@@ -34,12 +34,12 @@ namespace Task_Manager
             var messageString = SerializeMessage(registerMessage);
             var messageBytes = CommunicationModule.ConvertStringToData(messageString);
             communicationModule.Connect();
-            communicationModule.SendData(messageBytes);
+            //communicationModule.SendData(messageBytes);
             var response = communicationModule.ReceiveData();
             Trace.WriteLine("Response: " + response.ToString());
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
             this.NodeId = deserializedResponse.Id;
-            this.Timeout = deserializedResponse.Time;
+            this.Timeout = deserializedResponse.TimeoutTimeSpan;
             Trace.WriteLine("Response has been deserialized");
             //communicationModule.Disconnect();
         }
@@ -56,7 +56,7 @@ namespace Task_Manager
             var statusMessageString = SerializeMessage(statusMessage);
             var statusMessageBytes = CommunicationModule.ConvertStringToData(statusMessageString);
             communicationModule.Connect();
-            communicationModule.SendData(statusMessageBytes);
+            //communicationModule.SendData(statusMessageBytes);
             var statusMessageResponse = communicationModule.ReceiveData();
             if (statusMessageResponse.Length > 0)
                 DivideProblem(statusMessageResponse);
