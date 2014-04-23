@@ -9,9 +9,19 @@ namespace Computational_Server
 {
     public class NodeEntry
     {
-        public int ID { get; set; }
+        public ulong Id { get; set; }
         public RegisterType Type { get; set; }
         public List<string> SolvingProblems { get; set; }
+        public byte ParallelThreads { get; set; }
         public DateTime LastActive { get; set; }
+
+        public NodeEntry(ulong id, RegisterType type, List<string> solvingProblems, byte parallelThreads)
+        {
+            this.Id = id;
+            this.Type = type;
+            this.SolvingProblems = solvingProblems;
+            this.ParallelThreads = parallelThreads;
+            LastActive = DateTime.Now;
+        }
     }
 }

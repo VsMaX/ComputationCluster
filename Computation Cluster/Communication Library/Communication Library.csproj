@@ -37,6 +37,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="UCCTaskSolver">
+      <HintPath>C:\Users\mike\Desktop\UCCTaskSolver.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseNode.cs" />
@@ -45,6 +48,7 @@
     <Compile Include="ComputationSerializer.cs" />
     <Compile Include="DivideProblem.cs" />
     <Compile Include="DivideProblemMessage.cs" />
+    <Compile Include="ICommunicationModule.cs" />
     <Compile Include="PartialProblem.cs" />
     <Compile Include="PartialProblemsMessage.cs" />
     <Compile Include="RegisterMessage.cs" />

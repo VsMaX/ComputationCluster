@@ -41,7 +41,7 @@ namespace Computational_Node
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
             Trace.WriteLine("Response has been deserialized");
             NodeId = deserializedResponse.Id;
-            Timeout = deserializedResponse.Time;
+            Timeout = deserializedResponse.TimeoutTimeSpan;
             communicationModule.Disconnect();
         }
 

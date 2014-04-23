@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Communication_Library;
 
 namespace Computational_Server
 {
@@ -14,14 +15,14 @@ namespace Computational_Server
     {
         static void Main(string[] args)
         {
-            Console.WriteLine();
-            var computationServer = new ComputationServer("127.0.0.1", 8080, new TimeSpan(0,0,30));
-            computationServer.StartListening();
-            Console.ReadKey();
-            Trace.WriteLine("Server stopping");
-            computationServer.StopListening();
-            Trace.WriteLine("Server stopped");
-            Console.ReadKey();
+            //Console.WriteLine();
+            //var computationServer = new ComputationServer();
+            //computationServer.StartListeningThread();
+            //Console.ReadKey();
+            //Trace.WriteLine("Server stopping");
+            //computationServer.StopListening();
+            //Trace.WriteLine("Server stopped");
+            //Console.ReadKey();
         }
     }
 }

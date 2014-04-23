@@ -17,8 +17,11 @@ namespace Communication_Library
         [XmlElement]
         public string Timeout { get; set; }
 
+        /// <summary>
+        /// Time parsed from timeout, use this to pass data to Timeout property
+        /// </summary>
         [XmlIgnore]
-        public TimeSpan Time
+        public TimeSpan TimeoutTimeSpan
         {
             get
             {

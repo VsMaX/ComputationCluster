@@ -21,13 +21,13 @@ namespace ComputationTests
 
         private void StartServer()
         {
-            server = new ComputationServer(computationServerIp, computationServerPort, new TimeSpan(0,0,30));
-            server.StartListening();
+            server = new ComputationServer(new TimeSpan(0,0,30), null);
+            server.StartServer();
         }
 
         private void StopServer()
         {
-            server.StopListening();
+            server.StopServer();
         }
 
         [TestInitialize]
@@ -40,25 +40,6 @@ namespace ComputationTests
         public void TestClean()
         {
             StopServer();
-        }
-
-        [TestMethod]
-        public void CC_To_CS_Communication_Test()
-        {
-            //ARRANGE
-            var client = new ComputationClient(computationServerIp, computationServerPort);
-
-            var problemRequest = new SolveRequestMessage();
-
-            string ip = "127.0.0.1";
-
-            //ACT
-            client.SendSolveRequest(problemRequest);
-            server.ReceiveAllMessages();
-            //ASSERT
-            //uwaga tu moze byc deadlock
-            //zapobieganie deadlockowi odbywa sie przy pomocy metody ReceiveAllMessages
-            Assert.AreEqual(server.GetUnfinishedTasks().Count, 1);
         }
     }
 }

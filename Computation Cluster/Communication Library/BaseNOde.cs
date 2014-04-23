@@ -18,7 +18,7 @@ namespace Communication_Library
             }
             catch (Exception ex)
             {
-                Trace.WriteLine("Error deserializing message: " + ex.ToString() + " Message: " + message);
+                LogError(ex.ToString());
                 return String.Empty;
             }
         }
@@ -32,9 +32,19 @@ namespace Communication_Library
             }
             catch (Exception ex)
             {
-                Trace.WriteLine("Error deserializing message: " + ex.ToString() + " Message: " + message);
+                LogError(ex.ToString());
                 return null;
             }
+        }
+
+        protected void LogError(string message)
+        {
+            
+        }
+
+        protected void LogError(Exception ex)
+        {
+            
         }
     }
 }

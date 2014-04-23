@@ -16,301 +16,90 @@ namespace Computational_Server
 {
     public class ComputationServer : BaseNode
     {
-        private int port;
-        private string serverIPAddress;
-
-        private object solveRequestMessagesLock = new object();
-        private int openConnectionsCount;
-        private int activeNodeCount;
         private Thread listeningThread;
-
-
-        public static ManualResetEvent allDone = new ManualResetEvent(false);
+        private Thread processingThread;
+        private CancellationTokenSource listeningThreadCancellationTokenSource;
+        private CancellationTokenSource processingThreadCancellationToken;
+        
         private ConcurrentQueue<SolveRequestMessage> solveRequestMessageQueue;
-        public ConcurrentBag<NodeEntry> ActiveNodes { get; set; }
+        public ConcurrentDictionary<ulong, NodeEntry> ActiveNodes { get; set; }
         Socket handler;
-        private CancellationTokenSource cancellationToken;
-
+        private ICommunicationModule communicationModule;
 
         public readonly TimeSpan DefaultTimeout;
+        private ulong nodesId;
+        private object nodesIdLock = new object();
 
-        public ComputationServer(string _ipAddress, int _port, TimeSpan nodeTimeout)
+        public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule)
         {
-            cancellationToken = new CancellationTokenSource();
             solveRequestMessageQueue = new ConcurrentQueue<SolveRequestMessage>();
-            ActiveNodes = new ConcurrentBag<NodeEntry>();
-            serverIPAddress = _ipAddress;
-            port = _port;
-            openConnectionsCount = 0;
-            activeNodeCount = 0;
+            ActiveNodes = new ConcurrentDictionary<ulong, NodeEntry>();
             DefaultTimeout = nodeTimeout;
+            nodesId = 0;
+            this.communicationModule = communicationModule;
         }
 
-        public void StartListening()
+        public void StartServer()
         {
-            listeningThread = new Thread(() => StartListeningThread(cancellationToken));
+            StartListeningThread();
+            StartProcessingThread();
+        }
+
+        private void StartListeningThread()
+        {
+            listeningThreadCancellationTokenSource = new CancellationTokenSource();
+            listeningThread = new Thread(ListeningThread);
             listeningThread.Start();
         }
 
-        private void StartListeningThread(CancellationTokenSource cancellationToken)
+        private void StartProcessingThread()
         {
-            Socket sListener = null;
-            do
-            {
-                //TODO przepisac ladnie i wydzielic mniejsze funkcje
-
-                IPEndPoint ipEndPoint = null;
-                try
-                {
-                    Trace.WriteLine("");
-
-                    // Creates one SocketPermission object for access restrictions
-                    var permission = new SocketPermission(
-                        NetworkAccess.Accept, // Allowed to accept connections 
-                        TransportType.Tcp, // Defines transport types 
-                        serverIPAddress, // The IP addresses of local host 
-                        SocketPermission.AllPorts // Specifies all ports 
-                        );
-
-                    // Ensures the code to have permission to access a Socket 
-                    permission.Demand();
-
-                    // Resolves a host name to an IPHostEntry instance 
-                    //IPHostEntry ipHost = Dns.GetHostEntry("192.168.110.38");
-
-                    //byte[] ip_byte = new byte[ip_string.Length * sizeof(char)];
-                    //System.Buffer.BlockCopy(ip_string.ToCharArray(), 0, ip_byte, 0, ip_byte.Length);
-                    // Gets first IP address associated with a localhost 
-                    IPAddress ipAddr = IPAddress.Parse(serverIPAddress);
-
-                    // Creates a network endpoint 
-                    ipEndPoint = new IPEndPoint(ipAddr, port);
-
-                    // Create one Socket object to listen the incoming connection 
-                    sListener = new Socket(
-                        ipAddr.AddressFamily,
-                        SocketType.Stream,
-                        ProtocolType.Tcp
-                        );
-
-                    // Associates a Socket with a local endpoint 
-                    sListener.Bind(ipEndPoint);
-                    Trace.WriteLine("Server listening");
-                }
-                catch (Exception ex)
-                {
-                    Trace.WriteLine(ex.ToString());
-                }
-
-                try
-                {
-                    // Places a Socket in a listening state and specifies the maximum 
-                    // Length of the pending connections queue 
-                    sListener.Listen(100);
-
-                    Trace.WriteLine("Server is now listening on " + ipEndPoint.Address + " port: " + ipEndPoint.Port);
-                    while (true)
-                    {
-                        // Set the event to nonsignaled state.
-                        allDone.Reset();
-
-                        // Start an asynchronous socket to listen for connections.
-                        Trace.WriteLine("Waiting for a connection...");
-                        sListener.BeginAccept(
-                            new AsyncCallback(AcceptCallback),
-                            sListener);
-
-                        allDone.WaitOne(new TimeSpan(0, 0, 10));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Trace.WriteLine(ex.ToString());
-                }
-            } while (!cancellationToken.IsCancellationRequested);
+            processingThreadCancellationToken = new CancellationTokenSource();
+            processingThread = new Thread(ProcessingThread);
+            processingThread.Start();
         }
 
-        private void AcceptCallback(IAsyncResult ar)
+        private void ProcessingThread()
         {
-            //TODO przepisac ladnie i wydzielic mniejsze funkcje
-            //TODO tutaj powinna sie znajdowac logika odpowiadajaca za rozpoznawanie wiadomosci przychodzacych
-            //TODO kazda wiadomosc powinna miec swoja funkcje ktora ja obsluguje
-            Trace.WriteLine("Accepted callback");
-            Socket listener = null;
-            Thread.Sleep(2000);
-            // A new Socket to handle remote host communication 
-            try
-            {
-                allDone.Set();
-                // Receiving byte array 
-                byte[] buffer = new byte[1024];
-                // Get Listening Socket object 
-                listener = (Socket)ar.AsyncState;
-                // Create a new socket 
-                handler = listener.EndAccept(ar);
-
-                // Using the Nagle algorithm 
-                handler.NoDelay = false;
-
-                // Creates one object array for passing data 
-                object[] obj = new object[2];
-                obj[0] = buffer;
-                obj[1] = handler;
-                
-                // Begins to asynchronously receive data 
-                handler.BeginReceive(
-                    buffer,        // An array of type Byt for received data 
-                    0,             // The zero-based position in the buffer  
-                    buffer.Length, // The number of bytes to receive 
-                    SocketFlags.None,// Specifies send and receive behaviors 
-                    new AsyncCallback(ReceiveCallback),//An AsyncCallback delegate 
-                    obj            // Specifies infomation for receive operation 
-                    );
-
-                // Begins an asynchronous operation to accept an attempt 
-                AsyncCallback aCallback = new AsyncCallback(AcceptCallback);
-                listener.BeginAccept(aCallback, listener);
-            }
-            catch (Exception ex) { Trace.WriteLine(ex.ToString()); }
+            
         }
 
-        public void StopListening()
+        public void ListeningThread()
         {
-            cancellationToken.Cancel();
-            try
+            communicationModule.SetupListening();
+            while (!listeningThreadCancellationTokenSource.IsCancellationRequested)
             {
-                listeningThread.Join(new TimeSpan(0, 1, 0));
+                var receivedMessage = communicationModule.ReceiveData();
+                var response = ProcessMessage(receivedMessage);
+                if(!String.IsNullOrEmpty(response))
+                    communicationModule.SendData(response);
             }
-            catch (Exception ex)
-            {
-                //TODO logging
-            }
-        }
-
-        public void ReceiveCallback(IAsyncResult ar)
-        {
-            //TODO przepisac ladnie i wydzielic mniejsze funkcje
-            try
-            {
-                // Fetch a user-defined object that contains information 
-                object[] obj = new object[2];
-                obj = (object[]) ar.AsyncState;
-
-                // Received byte array 
-                byte[] buffer = (byte[]) obj[0];
-
-                // A Socket to handle remote host communication. 
-                handler = (Socket) obj[1];
-
-                // Received message 
-                string content = string.Empty;
-
-                // The number of bytes received. 
-                int bytesRead = handler.EndReceive(ar);
-
-                content = CommunicationModule.ConvertDataToString(buffer, bytesRead);
-
-                Trace.WriteLine("Received message: " + content);
-
-                var response = ProcessMessage(content);
-
-                byte[] bytes = CommunicationModule.ConvertStringToData(response);
-                //byte[] bytes = new byte[buff.Length * sizeof(char)];
-                //System.Buffer.BlockCopy(buff.ToCharArray(), 0, bytes, 0, bytes.Length);
-
-                handler.BeginSend(bytes, 0, bytes.Length, 0,
-                    new AsyncCallback(SendCallback), handler);
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.ToString());
-            }
-        }
-
-        private string Register(int newId, RegisterType rt, List<string> solving)
-        {
-            var nodeEntry = new NodeEntry()
-            {
-                ID = newId,
-                Type = rt,
-                LastActive = DateTime.Now,
-                SolvingProblems = solving
-            };
-
-            ActiveNodes.Add(nodeEntry);
-            var response = new RegisterResponseMessage()
-            {
-                Id = (ulong)nodeEntry.ID,
-                Time = DefaultTimeout
-            };
-            return SerializeMessage<RegisterResponseMessage>(response);
-        }
-
-        private bool IfTaskManager(ulong id)
-        {
-            if (ActiveNodes.First(x => x.ID == (int)id).Type == RegisterType.TaskManager)
-                return true;
-            else
-                return false;
         }
 
         private string ProcessMessage(string message)
         {
-            var messageName = GetMessageName(message);
+            var messageName = this.GetMessageName(message);
+            Trace.WriteLine("Received " + messageName);
             switch (messageName)
             {
                 case "Register":
-                    Interlocked.Increment(ref openConnectionsCount);
-                    Trace.WriteLine("Received Register");
-                    RegisterMessage registerMessage = null;
-                    try
-                    {
-                        int newId = Thread.VolatileRead(ref openConnectionsCount);
-                        registerMessage = DeserializeMessage<RegisterMessage>(message);
+                    return this.ProcessCaseRegister(message);
 
-                        switch (registerMessage.Type)
-                        {
-                            case RegisterType.ComputationalNode:
-                                return Register(newId, registerMessage.Type, registerMessage.SolvableProblems.ToList());
-                                break;
-                            case RegisterType.TaskManager:
-                                return Register(newId, registerMessage.Type, registerMessage.SolvableProblems.ToList());
-                                break;
-                        }
-
-
-                    }
-                    catch (Exception ex)
-                    {
-                        Trace.WriteLine(ex.ToString());
-                    }
-                    
-                    break;
                 case "SolveRequest":
-                    Trace.WriteLine("Received SolveRequest");
-                    var deserializedMessage = DeserializeMessage<SolveRequestMessage>(message);
-                    solveRequestMessageQueue.Enqueue(deserializedMessage);
-                    var solveRequestResponse = new SolveRequestResponseMessage() {Id = 1};
-                    return SerializeMessage<SolveRequestResponseMessage>(solveRequestResponse);
-                    break;
+                    return this.ProcessCaseSolveRequest(message);
+
                 case "SolutionRequest":
-                    Trace.WriteLine("Received SolutionRequest");
-                    var deserializedSolutionRequestMessage = DeserializeMessage<SolutionRequestMessage>(message);
-                    //solveRequestMessageQueue.Enqueue(deserializedSolutionRequestMessage);
-                    Solution s = new Solution() { ComputationsTime = 100, Data = new byte[] { 0, 0, 10 }, TaskId = 23, TaskIdSpecified = true, TimeoutOccured = true, Type = SolutionType.Final };
-                    var solveSolutions = new SolutionsMessage() { Id = 1, ProblemType="TSP", CommonData= new byte[]{0,0,22}, Solutions = new Solution[]{s} };
-                    return SerializeMessage<SolutionsMessage>(solveSolutions);
+                    return this.ProcessCaseSolutionRequest(message);
+
                 case "Status":
-                    Trace.WriteLine("Received Status");
-                    var deserializedStatusMessage = DeserializeMessage<StatusMessage>(message);
-                    //TODO odswiezyc czas zycia CNa na liscie
-                    if (IfTaskManager(deserializedStatusMessage.Id))
-                    {
-                        var dp = new DivideProblemMessage() { Id = deserializedStatusMessage.Id, ComputationalNodes = 20, Data = new byte[] { 0, 0, 10 }, ProblemType = "TSP" };
-                        return SerializeMessage<DivideProblemMessage>(dp);
-                    }
-                    return "";
-                    break;
+                    return this.ProcessCaseStatus(message);
+
+                case "SolvePartialProblems":
+                    return this.ProcessCaseSolvePartialProblems(message);
+
+                case "Solutions":
+                    return this.ProcessCaseSolutions(message);
+
                 default:
                     Trace.WriteLine("Received another status");
                     Trace.WriteLine("XML Data: " + message);
@@ -318,6 +107,119 @@ namespace Computational_Server
             }
             return String.Empty;
         }
+
+        private string ProcessCaseRegister(string message)
+        {
+            var registerMessage = DeserializeMessage<RegisterMessage>(message);
+
+            var newId = GenerateNewNodeId();
+            
+            if (RegisterNode(newId, registerMessage.Type, registerMessage.SolvableProblems.ToList(),
+                    registerMessage.ParallelThreads) < 0)
+                LogError("");
+
+            var registerResponse = new RegisterResponseMessage()
+            {
+                Id = newId,
+                TimeoutTimeSpan = this.DefaultTimeout
+            };
+
+            return SerializeMessage(registerResponse);
+        }
+
+        private ulong GenerateNewNodeId()
+        {
+            ulong newNodeId = 0;
+            lock (nodesIdLock)
+            {
+                this.nodesId++;
+                newNodeId = nodesId;
+            }
+            return newNodeId;
+        }
+
+        /// <summary>
+        /// Registers node in server and adds it to active nodes queue
+        /// </summary>
+        /// <param name="newId"></param>
+        /// <param name="type"></param>
+        /// <param name="solvableProblems"></param>
+        /// <param name="parallelThreads"></param>
+        /// <returns>0 if success, negative value if there was an error</returns>
+        private int RegisterNode(ulong newId, RegisterType type, List<string> solvableProblems, byte parallelThreads)
+        {
+            var node = new NodeEntry(newId, type, solvableProblems, parallelThreads);
+            if (ActiveNodes.TryAdd(newId, node))
+                return -1;
+            return 0;
+        }
+
+        private string ProcessCaseSolutions(string message)
+        {
+            var deserializedMessage = DeserializeMessage<SolutionsMessage>(message);
+
+            //TODO Oczekiwanie na wlasciwego TM i przesłanie do niego poszczegolnych solucji
+
+            return string.Empty;
+        }
+
+        private string ProcessCaseSolvePartialProblems(string message)
+        {
+            var deserializedMessage = DeserializeMessage<PartialProblemsMessage>(message);
+
+            //TO DO Oczekiwanie na wlasciwe CN i przeslanie do nich podproblemow
+
+            return string.Empty;
+        }
+
+        private string ProcessCaseStatus(string message)
+        {
+            var deserializedStatusMessage = DeserializeMessage<StatusMessage>(message);
+
+            //TODO odswiezyc czas zycia CNa na liscie
+
+            //if (IfTaskManager(deserializedStatusMessage.Id))
+            //{
+            //    var dp = new DivideProblemMessage() { Id = deserializedStatusMessage.Id, ComputationalNodes = 20, Data = new byte[] { 0, 0, 10 }, ProblemType = "TSP" };
+            //    return SerializeMessage<DivideProblemMessage>(dp);
+            //}
+            return string.Empty;
+        }
+
+        private string ProcessCaseSolutionRequest(string message)
+        {
+            var deserializedSolutionRequestMessage = DeserializeMessage<SolutionRequestMessage>(message);
+            //solveRequestMessageQueue.Enqueue(deserializedSolutionRequestMessage);
+            Solution s = new Solution()
+            {
+                ComputationsTime = 100,
+                Data = new byte[] { 0, 0, 10 },
+                TaskId = 23,
+                TaskIdSpecified = true,
+                TimeoutOccured = true,
+                Type = SolutionType.Final
+            };
+            var solveSolutions = new SolutionsMessage()
+            {
+                Id = 1,
+                ProblemType = "TSP",
+                CommonData = new byte[] { 0, 0, 22 },
+                Solutions = new Solution[] { s }
+            };
+            return SerializeMessage<SolutionsMessage>(solveSolutions);
+        }
+
+        private string ProcessCaseSolveRequest(string message)
+        {
+            var deserializedMessage = DeserializeMessage<SolveRequestMessage>(message);
+
+            //TO DO Oczekiwanie na wlasciwego TM i przesłanie do niego problemu
+            solveRequestMessageQueue.Enqueue(deserializedMessage);
+            var solveRequestResponse = new SolveRequestResponseMessage() { Id = 1 };
+            return SerializeMessage<SolveRequestResponseMessage>(solveRequestResponse);
+        }
+
+        
 
         private string GetMessageName(string message)
         {
@@ -330,45 +232,18 @@ namespace Computational_Server
             {
                 Trace.WriteLine("Error parsing xml document: " + message + "exception: " + ex.ToString());
                 return String.Empty;
+
                 //TODO logowanie
             }
             XmlElement root = doc.DocumentElement;
             return root.Name;
         }
 
-        public IList<SolveRequestMessage> GetUnfinishedTasks()
+        public void StopServer()
         {
-            return solveRequestMessageQueue.ToList();
-        }
-        
-        private static void SendCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the socket from the state object.
-                Socket handler = (Socket)ar.AsyncState;
-
-                // Complete sending the data to the remote device.
-                int bytesSent = handler.EndSend(ar);
-                Console.WriteLine("Sent {0} bytes to client.", bytesSent);
-
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
-
-            }
-            catch (Exception e)
-            {
-                Trace.WriteLine(e.ToString());
-            }
-        }
-
-        public void ReceiveAllMessages()
-        {
-            while (Thread.VolatileRead(ref openConnectionsCount) > 0)
-            {
-                Trace.WriteLine("Number of open connections: " + openConnectionsCount.ToString());
-                Thread.Sleep(1000);
-            }
+            listeningThreadCancellationTokenSource.Cancel();
+            listeningThread.Join();
+            Trace.WriteLine("Stopped listening");
         }
     }
 }
