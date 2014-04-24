@@ -83,7 +83,7 @@ namespace Communication_Library
             IPAddress ipAddr = IPAddress.Parse(ip);
 
             // Creates a network endpoint 
-            IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, port);
+            ipEndPoint = new IPEndPoint(ipAddr, port);
 
             // Create one Socket object to setup Tcp connection 
             var socket = new Socket(
