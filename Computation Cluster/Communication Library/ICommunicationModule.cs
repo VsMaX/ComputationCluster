@@ -16,5 +16,7 @@ namespace Communication_Library
         void SendData(string str, Socket socket);
         string ReceiveData(Socket socket);
         Socket Accept(Socket socket);
+
+        void Dispose();
     }
 }

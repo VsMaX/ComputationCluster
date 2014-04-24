@@ -12,8 +12,8 @@ namespace Computational_Client
     public class ComputationClient : IDisposable
     {
         byte[] bytes = new byte[1024];
-        private CommunicationModule communicationModule;
-        private Socket socket;
+        private ICommunicationModule communicationModule;
+        private Socket clientSocket;
 
         public ComputationClient(string ip, int port)
         {
@@ -24,12 +24,15 @@ namespace Computational_Client
         {
             try
             {
-                socket = communicationModule.SetupClient();
-                communicationModule.Connect(socket);
+                clientSocket = communicationModule.SetupClient();
+                communicationModule.Connect(clientSocket);
                 var serializer = new ComputationSerializer<SolveRequestMessage>();
                 var message = serializer.Serialize(solveRequestMessage);
-                byte[] byteMessage = Encoding.UTF8.GetBytes(message);
-                //communicationModule.SendData(byteMessage);
+                //byte[] byteMessage = Encoding.UTF8.GetBytes(message);
+
+                communicationModule.SendData(message, clientSocket);
+                communicationModule.CloseSocket(clientSocket);
+
             }
             catch (Exception ex)
             {
@@ -42,11 +45,15 @@ namespace Computational_Client
         {
             try
             {
-                communicationModule.Connect(socket);
+                clientSocket = communicationModule.SetupClient();
+                communicationModule.Connect(clientSocket);
                 var serializer = new ComputationSerializer<SolutionRequestMessage>();
                 var message = serializer.Serialize(solutionRequestMessage);
-                byte[] byteMessage = Encoding.UTF8.GetBytes(message);
-                //communicationModule.SendData(byteMessage);
+                //byte[] byteMessage = Encoding.UTF8.GetBytes(message);
+                communicationModule.SendData(message, clientSocket);
+
+                communicationModule.CloseSocket(clientSocket);
+
             }
             catch (Exception ex)
             {
@@ -57,16 +64,22 @@ namespace Computational_Client
 
         public string ReceiveDataFromServer()
         {
-            communicationModule.Connect(socket);
-            var data = communicationModule.ReceiveData(socket);
+            clientSocket = communicationModule.SetupClient();
+            communicationModule.Connect(clientSocket);
+            var data = communicationModule.ReceiveData(clientSocket);
             Trace.WriteLine("Response: " + data.ToString());
+            communicationModule.CloseSocket(clientSocket);
             return data;
         }
-
-        public void Disconnect()
+        public void Dispose()
         {
-            
+            communicationModule.Dispose();
         }
+
+        //public void Disconnect()
+        //{
+            
+        //}
 
         //
         //public ComputationClient()
@@ -89,9 +102,8 @@ namespace Computational_Client
         //{
         //    throw new NotImplementedException();
         //}
-        public void Dispose()
-        {
-            communicationModule.Dispose();
-        }
+
+
+        
     }
 }
