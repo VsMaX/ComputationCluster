@@ -17,7 +17,7 @@ namespace Computational_Client
 
         public ComputationClient(string ip, int port)
         {
-            communicationModule = new CommunicationModule(ip, port, 5000);
+            communicationModule = new CommunicationModule(ip, port, 50000);
         }
 
         public void SendSolveRequest(SolveRequestMessage solveRequestMessage)
@@ -29,8 +29,9 @@ namespace Computational_Client
                 var serializer = new ComputationSerializer<SolveRequestMessage>();
                 var message = serializer.Serialize(solveRequestMessage);
                 //byte[] byteMessage = Encoding.UTF8.GetBytes(message);
-
+                
                 communicationModule.SendData(message, clientSocket);
+                Thread.Sleep(50000);
                 communicationModule.CloseSocket(clientSocket);
 
             }
@@ -51,7 +52,7 @@ namespace Computational_Client
                 var message = serializer.Serialize(solutionRequestMessage);
                 //byte[] byteMessage = Encoding.UTF8.GetBytes(message);
                 communicationModule.SendData(message, clientSocket);
-
+                Thread.Sleep(50000);
                 communicationModule.CloseSocket(clientSocket);
 
             }

@@ -29,7 +29,7 @@ namespace Computational_Client
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var computationalClient = new ComputationClient("127.0.0.1", 8080);
+            var computationalClient = new ComputationClient("127.0.0.1", 5555);
             byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
 
             var sr = new SolveRequestMessage() { Data = null, ProblemType = "Ciężki problem", SolvingTimeout = 10000 };
@@ -42,7 +42,7 @@ namespace Computational_Client
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
-            var computationalClient = new ComputationClient("127.0.0.1", 8080);
+            var computationalClient = new ComputationClient("127.0.0.1", 5555);
             byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
 
             var solutionRequest = new SolutionRequestMessage() { Id = 4 };
