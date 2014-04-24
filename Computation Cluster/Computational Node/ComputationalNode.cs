@@ -50,19 +50,19 @@ namespace Computational_Node
 
         public void SendStatus()
         {
-            communicationModule.Connect(socket);
-            var testStatusThread = new StatusThread() {HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, TaskIdSpecified = true};
-            var statusMessage = new StatusMessage()
-            {
-                Id = NodeId,
-                Threads = new StatusThread[] { testStatusThread }
-            };
-            var statusMessageString = SerializeMessage(statusMessage);
-            var statusMessageBytes = CommunicationModule.ConvertStringToData(statusMessageString);
-            communicationModule.Connect(socket);
-            //communicationModule.SendData(statusMessageBytes);
-            var statusMessageResponse = communicationModule.ReceiveData(socket);
-            Trace.WriteLine("status response: " + statusMessageResponse);
+            //communicationModule.Connect(socket);
+            //var testStatusThread = new StatusThread() {HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, TaskIdSpecified = true};
+            //var statusMessage = new StatusMessage()
+            //{
+            //    Id = NodeId,
+            //    Threads = new StatusThread[] { testStatusThread }
+            //};
+            //var statusMessageString = SerializeMessage(statusMessage);
+            //var statusMessageBytes = CommunicationModule.ConvertStringToData(statusMessageString);
+            //communicationModule.Connect(socket);
+            ////communicationModule.SendData(statusMessageBytes);
+            //var statusMessageResponse = communicationModule.ReceiveData(socket);
+            //Trace.WriteLine("status response: " + statusMessageResponse);
         }
     }
 }

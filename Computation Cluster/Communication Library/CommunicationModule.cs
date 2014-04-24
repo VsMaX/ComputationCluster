@@ -16,7 +16,6 @@ namespace Communication_Library
     {
         private string ip;
         private int port;
-        public static readonly int BufferSize = 1024;
         public Socket handler { get; set; }
         public readonly int ReadTimeoutMs;
 
@@ -111,10 +110,13 @@ namespace Communication_Library
         public void CloseSocket(Socket socket)
         {
             // Disables sends and receives on a Socket. 
-            socket.Shutdown(SocketShutdown.Both);
+            if (socket != null && !socket.Connected)
+            {
+                socket.Shutdown(SocketShutdown.Both);
+            }
 
-            //Closes the Socket connection and releases all resources 
             socket.Close();
+            //Closes the Socket connection and releases all resources 
         }
 
         public void SendData(string str, Socket socket)
@@ -134,17 +136,15 @@ namespace Communication_Library
         public string ReceiveData(Socket socket)
         {
             //this.socket.ReceiveTimeout = 3000;
-            byte[] buffer = new byte[BufferSize];
+            byte[] buffer = new byte[StateObject.BufferSize];
 
             // Converts byte array to string 
             var state = new StateObject();
 
-            var result = socket.BeginReceive(buffer, 0, BufferSize, 0,
+            var result = socket.BeginReceive(buffer, 0, StateObject.BufferSize, 0,
                 new AsyncCallback(ReadCallback), state);
 
             result.AsyncWaitHandle.WaitOne(ReadTimeoutMs);
-
-            socket.Close();
 
             return state.sb.ToString();
         }
