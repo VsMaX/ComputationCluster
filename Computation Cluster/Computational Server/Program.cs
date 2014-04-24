@@ -16,7 +16,7 @@ namespace Computational_Server
         static void Main(string[] args)
         {
             Console.WriteLine();
-            var computationServer = new ComputationServer(new TimeSpan(0,0,10), new CommunicationModule("127.0.0.1", 5555, 5000));
+            var computationServer = new ComputationServer(new TimeSpan(0,0,10), new CommunicationModule("127.0.0.1", 5555, 300000));
             computationServer.StartServer();
             Console.ReadKey();
             Trace.WriteLine("Server stopping");

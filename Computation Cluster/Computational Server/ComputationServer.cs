@@ -72,9 +72,17 @@ namespace Computational_Server
             while (!listeningThreadCancellationTokenSource.IsCancellationRequested)
             {
                 var clientSocket = communicationModule.Accept(serverSocket);
-                var receivedMessage = communicationModule.ReceiveData(serverSocket);
+                Trace.WriteLine("Accepted connection");
+                var receivedMessage = communicationModule.ReceiveData(clientSocket);
+                Trace.WriteLine("Received data: " + receivedMessage);
+                string result = String.Empty;
                 if (!String.IsNullOrEmpty(receivedMessage))
-                    communicationModule.SendData(receivedMessage, clientSocket);
+                    result = ProcessMessage(receivedMessage);
+                Trace.WriteLine("Message processed, response: " + result);
+                if(!String.IsNullOrEmpty(result))
+                    communicationModule.SendData(result, clientSocket);
+                Thread.Sleep(50000);
+                communicationModule.CloseSocket(clientSocket);
             }
         }
 
