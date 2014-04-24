@@ -16,39 +16,22 @@ namespace Communication_Library
     {
         private string ip;
         private int port;
-
-        private Socket socket { get; set; }
-
+        public static readonly int BufferSize = 1024;
         public Socket handler { get; set; }
+        public readonly int ReadTimeoutMs;
 
         private IPEndPoint ipEndPoint { get; set; }
 
         public static ManualResetEvent allDone = new ManualResetEvent(false);
 
-        public CommunicationModule(string ip, int port)
+        public CommunicationModule(string ip, int port, int readTimeoutMs)
         {
             this.port = port;
             this.ip = ip;
+            this.ReadTimeoutMs = readTimeoutMs;
         }
 
-        public void SetupListening()
-        {
-            //do
-            //{
-                try
-                {
-                    Trace.WriteLine("");
-                    this.SetSocketForListening();
-                }
-                catch (Exception ex)
-                {
-                    Trace.WriteLine(ex.ToString());
-                }
-            //}
-            //while (this.socket.IsBound);
-        }
-
-        private void SetSocketForListening()
+        public Socket SetupServer()
         {
             // Creates one SocketPermission object for access restrictions
             var permission = new SocketPermission(
@@ -65,101 +48,76 @@ namespace Communication_Library
             IPAddress ipAddr = IPAddress.Parse(this.ip);
 
             // Creates a network endpoint 
-            this.ipEndPoint = new IPEndPoint(ipAddr, this.port);
+            ipEndPoint = new IPEndPoint(ipAddr, this.port);
 
             // Create one Socket object to listen the incoming connection 
-            this.socket = new Socket(
+            var socket = new Socket(
                 ipAddr.AddressFamily,
                 SocketType.Stream,
                 ProtocolType.Tcp
                 );
 
             // Associates a Socket with a local endpoint 
-            this.socket.Bind(this.ipEndPoint);
-            Trace.WriteLine("Socket set up for listening");
-        }
-
-        public void StartListening()
-        {
+            socket.Bind(this.ipEndPoint);
             // Places a Socket in a listening state and specifies the maximum 
             // Length of the pending connections queue 
-            this.socket.Listen(100);
+            socket.Listen(100);
             Trace.WriteLine("Socket is now listening on " + this.ipEndPoint.Address + " port: " + this.ipEndPoint.Port);
+
+            return socket;
         }
 
-        public void SetupConnecting()
+        public Socket SetupClient()
         {
-            if (this.socket != null && this.socket.Connected)
-                return;
+            // Create one SocketPermission for socket access restrictions 
+            SocketPermission permission = new SocketPermission(
+                NetworkAccess.Connect,    // Connection permission 
+                TransportType.Tcp,        // Defines transport types 
+                "",                       // Gets the IP addresses 
+                SocketPermission.AllPorts // All ports 
+                );
 
-            try
-            {
-                // Create one SocketPermission for socket access restrictions 
-                SocketPermission permission = new SocketPermission(
-                    NetworkAccess.Connect,    // Connection permission 
-                    TransportType.Tcp,        // Defines transport types 
-                    "",                       // Gets the IP addresses 
-                    SocketPermission.AllPorts // All ports 
-                    );
+            // Ensures the code to have permission to access a Socket 
+            permission.Demand();
 
-                // Ensures the code to have permission to access a Socket 
-                permission.Demand();
+            // Gets first IP address associated with a localhost 
+            IPAddress ipAddr = IPAddress.Parse(ip);
 
-                // Gets first IP address associated with a localhost 
-                IPAddress ipAddr = IPAddress.Parse(ip);
+            // Creates a network endpoint 
+            IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, port);
 
-                // Creates a network endpoint 
-                IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, port);
+            // Create one Socket object to setup Tcp connection 
+            var socket = new Socket(
+                ipAddr.AddressFamily,// Specifies the addressing scheme 
+                SocketType.Stream,   // The type of socket  
+                ProtocolType.Tcp     // Specifies the protocols  
+                );
 
-                // Create one Socket object to setup Tcp connection 
-                this.socket = new Socket(
-                    ipAddr.AddressFamily,// Specifies the addressing scheme 
-                    SocketType.Stream,   // The type of socket  
-                    ProtocolType.Tcp     // Specifies the protocols  
-                    );
-
-                this.socket.NoDelay = false;   // Using the Nagle algorithm 
-            }
-
-            catch (Exception exc)
-            {
-                Trace.WriteLine("Error connecting to server");
-                throw exc;
-            }
+            socket.NoDelay = false;   // Using the Nagle algorithm 
+            return socket;
         }
 
-        public void Connect()
+        public void Connect(Socket socket)
         {
-            try
-            {
-                // Establishes a connection to a remote host 
-                this.socket.Connect(ipEndPoint);
-                Trace.WriteLine("Connected");
-            }
-            catch(Exception ex)
-            {
-                Trace.WriteLine(ex.ToString());
-            }
+            // Establishes a connection to a remote host 
+            socket.Connect(ipEndPoint);
         }
 
-        public void CloseConnection()
+        public Socket Accept(Socket socket)
         {
-            try
-            {
-                if (this.socket == null) return;
-                // Disables sends and receives on a Socket. 
-                this.socket.Shutdown(SocketShutdown.Both);
-
-                //Closes the Socket connection and releases all resources 
-                this.socket.Close();
-            }
-            catch(Exception ex)
-            {
-                Trace.WriteLine(ex.ToString());
-            }
+            return socket.Accept();
         }
 
-        public void SendData(string str)
+        public void CloseSocket(Socket socket)
+        {
+            // Disables sends and receives on a Socket. 
+            socket.Shutdown(SocketShutdown.Both);
+
+            //Closes the Socket connection and releases all resources 
+            socket.Close();
+        }
+
+        public void SendData(string str, Socket socket)
         {
             // Sends data to a connected Socket. 
             int bytesCount = 0;
@@ -168,44 +126,63 @@ namespace Communication_Library
 
             while (bytesCount != message.Length)
             {
-                bytesCount += this.socket.Send(message);
+                bytesCount += socket.Send(message);
                 Trace.WriteLine("Sent " + bytesCount.ToString() + " bytes");
             }
         }
 
-        public string ReceiveData()
+        public string ReceiveData(Socket socket)
         {
-            try
-            {
-                //this.socket.ReceiveTimeout = 3000;
-                byte[] buffer = new byte[1024];
-                int bytesRec = 0;
+            //this.socket.ReceiveTimeout = 3000;
+            byte[] buffer = new byte[BufferSize];
 
-                // Converts byte array to string 
-                String theMessageToReceive = String.Empty;
+            // Converts byte array to string 
+            var state = new StateObject();
 
-                // Read the data till data isn't available 
-                //while (this.socket.Available > 0)
-                //{
-                    bytesRec = this.socket.Receive(buffer);
-                    theMessageToReceive += Encoding.UTF8.GetString(buffer, 0, bytesRec);
-                    Trace.WriteLine("Received data: " + theMessageToReceive);
-                //}
-                //Set default value
-                //this.socket.ReceiveTimeout = 0;
-                return theMessageToReceive;
-            }
-            catch(SocketException ex)
+            var result = socket.BeginReceive(buffer, 0, BufferSize, 0,
+                new AsyncCallback(ReadCallback), state);
+
+            result.AsyncWaitHandle.WaitOne(ReadTimeoutMs);
+
+            socket.Close();
+
+            return state.sb.ToString();
+        }
+
+        private void ReadCallback(IAsyncResult ar)
+        {
+            String content = String.Empty;
+
+            // Retrieve the state object and the handler socket
+            // from the asynchronous state object.
+            StateObject state = (StateObject)ar.AsyncState;
+            Socket handler = state.workSocket;
+
+            // Read data from the client socket. 
+            int bytesRead = handler.EndReceive(ar);
+
+            if (bytesRead > 0)
             {
-                //Set default value
-                //this.socket.ReceiveTimeout = 0;
-                Trace.WriteLine(ex.ToString());
-                return String.Empty;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.ToString());
-                throw ex;
+                // There  might be more data, so store the data received so far.
+                state.sb.Append(Encoding.UTF8.GetString(
+                    state.buffer, 0, bytesRead));
+
+                // Check for end-of-file tag. If it is not there, read 
+                // more data.
+                content = state.sb.ToString();
+                if (content.IndexOf("<EOF>") > -1)
+                {
+                    // All the data has been read from the 
+                    // client. Display it on the console.
+                    Trace.WriteLine(String.Format("Read {0} bytes from socket. \n Data : {1}",
+                        content.Length, content));
+                }
+                else
+                {
+                    // Not all data received. Get more.
+                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
+                    new AsyncCallback(ReadCallback), state);
+                }
             }
         }
 
@@ -222,175 +199,21 @@ namespace Communication_Library
             return Encoding.UTF8.GetBytes(response);
         }
 
-        ///////////////////////////////////////////////////////////////////////////////////////
-
-        //public void SendDataAsync(byte[] message)
-        //{
-        //    // Sends data to a connected Socket. 
-        //    int bytesCount = 0;
-        //    while (bytesCount != message.Length)
-        //    {
-        //        bytesCount += this.socket.Send(message);
-        //        Trace.WriteLine("Sent " + bytesCount.ToString() + " bytes to server");
-        //    }
-        //}
-
-        //public string ReceiveDataAsync()
-        //{
-        //    //while (true)
-        //    //{
-        //        // Set the event to nonsignaled state.
-        //        //allDone.Reset();
-
-        //        // Start an asynchronous socket to listen for connections.
-        //        Console.WriteLine("Waiting for a connection...");
-        //        this.socket.BeginAccept(new AsyncCallback(this.AcceptCallback), this.socket);
-        //        //allDone.WaitOne();
-        //        // Wait until a connection is made before continuing.
-        //    //}
-
-        //    return String.Empty;
-        //}
-
-        ////public void Dispose()
-        ////{
-        ////    Disconnect();
-        ////}
-
-        //public void AcceptCallback(IAsyncResult ar)
-        //{
-        //    Trace.WriteLine("Accepted callback");
-        //    allDone.Set();
-        //    Thread.Sleep(2000);
-
-        //    // A new Socket to handle remote host communication 
-        //    try
-        //    {
-        //        this.HandleCommunication(ar);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Trace.WriteLine(ex.ToString());
-        //    }
-        //}
-
-        //public void HandleCommunication(IAsyncResult ar)
-        //{
-        //    Socket listener = null;
-
-        //    // Receiving byte array 
-        //    byte[] buffer = new byte[1024];
-
-        //    // Get Listening Socket object 
-        //    listener = (Socket)ar.AsyncState;
-
-        //    // Create a new socket 
-        //    this.handler = listener.EndAccept(ar);
-
-        //    // Using the Nagle algorithm 
-        //    this.handler.NoDelay = false;
-
-        //    // Creates one object array for passing data 
-        //    object[] obj = new object[2];
-        //    obj[0] = buffer;
-        //    obj[1] = this.handler;
-
-        //    // Begins to asynchronously receive data 
-        //    this.handler.BeginReceive(
-        //        buffer,        // An array of type Byt for received data
-        //        0,             // The zero-based position in the buffer
-        //        buffer.Length, // The number of bytes to receive
-        //        SocketFlags.None,// Specifies send and receive behaviors
-        //        new AsyncCallback(this.ReceiveCallback),//An AsyncCallback delegate
-        //        obj            // Specifies infomation for receive operation
-        //        );
-
-        //    // Begins an asynchronous operation to accept an attempt 
-        //    AsyncCallback aCallback = new AsyncCallback(this.AcceptCallback);
-        //    listener.BeginAccept(aCallback, listener);
-        //}
-
-        //public void ReceiveCallback(IAsyncResult ar)
-        //{
-        //    try
-        //    {
-        //        string content = this.ReadMessage(ar);
-        //        Trace.WriteLine("Received message: \n" + content);
-
-        //        //var response = this.ProcessMessage(content, this.GetMessageName(content));
-        //        var response = String.Empty;
-        //        byte[] bytes = CommunicationModule.ConvertStringToData(response);
-        //        handler.BeginSend(bytes, 0, bytes.Length, 0, new AsyncCallback(SendCallback), handler);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Trace.WriteLine(ex.ToString());
-        //    }
-        //}
-
-        //public string ReadMessage(IAsyncResult ar)
-        //{
-        //    // Fetch a user-defined object that contains information 
-        //    object[] obj = new object[2];
-        //    obj = (object[])ar.AsyncState;
-
-        //    // Received byte array 
-        //    byte[] buffer = (byte[])obj[0];
-
-        //    // A Socket to handle remote host communication. 
-        //    handler = (Socket)obj[1];
-
-        //    // Received message 
-        //    string content = string.Empty;
-
-        //    // The number of bytes received. 
-        //    int bytesRead = handler.EndReceive(ar);
-
-        //    return CommunicationModule.ConvertDataToString(buffer, bytesRead);
-        //}
-
-        //private static void SendCallback(IAsyncResult ar)
-        //{
-        //    try
-        //    {
-        //        // Retrieve the socket from the state object.
-        //        Socket handler = (Socket)ar.AsyncState;
-
-        //        // Complete sending the data to the remote device.
-        //        int bytesSent = handler.EndSend(ar);
-        //        Console.WriteLine("Sent {0} bytes back.", bytesSent);
-
-        //        handler.Shutdown(SocketShutdown.Both);
-        //        handler.Close();
-
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Trace.WriteLine(e.ToString());
-        //    }
-        //}
-
-        //private string GetMessageName(string message)
-        //{
-        //    XmlDocument doc = new XmlDocument();
-        //    try
-        //    {
-        //        doc.LoadXml(message);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Trace.WriteLine("Error parsing xml document: " + message + "exception: " + ex.ToString());
-        //        return String.Empty;
-
-        //        //TODO logowanie
-        //    }
-        //    XmlElement root = doc.DocumentElement;
-        //    return root.Name;
-        //}
-
         public void Dispose()
         {
             throw new NotImplementedException();
+        }
+
+        private class StateObject
+        {
+            // Client  socket.
+            public Socket workSocket = null;
+            // Size of receive buffer.
+            public const int BufferSize = 1024;
+            // Receive buffer.
+            public byte[] buffer = new byte[BufferSize];
+            // Received data string.
+            public StringBuilder sb = new StringBuilder();
         }
     }
 }

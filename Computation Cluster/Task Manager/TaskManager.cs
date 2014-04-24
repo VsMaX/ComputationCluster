@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
@@ -16,10 +17,11 @@ namespace Task_Manager
         public TSP tsp;
         public ulong NodeId { get; set; }
         public TimeSpan Timeout { get; set; }
+        private Socket socket;
 
         public TaskManager(string serverIp, int serverPort)
         {
-            communicationModule = new CommunicationModule(serverIp, serverPort);
+            communicationModule = new CommunicationModule(serverIp, serverPort, Timeout.Milliseconds);
             RegisterAtServer();
         }
 
@@ -33,9 +35,10 @@ namespace Task_Manager
             };
             var messageString = SerializeMessage(registerMessage);
             var messageBytes = CommunicationModule.ConvertStringToData(messageString);
-            communicationModule.Connect();
+            socket = communicationModule.SetupClient();
+            communicationModule.Connect(socket);
             //communicationModule.SendData(messageBytes);
-            var response = communicationModule.ReceiveData();
+            var response = communicationModule.ReceiveData(socket);
             Trace.WriteLine("Response: " + response.ToString());
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
             this.NodeId = deserializedResponse.Id;
@@ -46,7 +49,7 @@ namespace Task_Manager
 
         public void SendStatus()
         {
-            communicationModule.Connect();
+            communicationModule.Connect(socket);
             var testStatusThread = new StatusThread() { HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, TaskIdSpecified = true };
             var statusMessage = new StatusMessage()
             {
@@ -55,9 +58,9 @@ namespace Task_Manager
             };
             var statusMessageString = SerializeMessage(statusMessage);
             var statusMessageBytes = CommunicationModule.ConvertStringToData(statusMessageString);
-            communicationModule.Connect();
+            communicationModule.Connect(socket);
             //communicationModule.SendData(statusMessageBytes);
-            var statusMessageResponse = communicationModule.ReceiveData();
+            var statusMessageResponse = communicationModule.ReceiveData(socket);
             if (statusMessageResponse.Length > 0)
                 DivideProblem(statusMessageResponse);
          
@@ -68,8 +71,8 @@ namespace Task_Manager
 
         public string ReceiveDataFromServer()
         {
-            communicationModule.Connect();
-            var data = communicationModule.ReceiveData();
+            communicationModule.Connect(socket);
+            var data = communicationModule.ReceiveData(socket);
             
             Trace.WriteLine("Response: " + data.ToString());
             
@@ -96,7 +99,7 @@ namespace Task_Manager
                 solvepp[i] = new SolvePartialProblemsPartialProblem() { Data = tsp.PartialProblems[i], TaskId = (ulong)i };    
             }
 
-                communicationModule.Connect();
+                communicationModule.Connect(socket);
            
             //SolvePartialProblemsPartialProblem sp = new SolvePartialProblemsPartialProblem() { Data = new byte[] { 1, 2, 3 }, TaskId = 4 };
             var partialproblems = new PartialProblemsMessage() { Id = dpm.Id, CommonData = dpm.Data, PartialProblems = solvepp, ProblemType = tsp.Name, SolvingTimeout = 30, SolvingTimeoutSpecified = true };

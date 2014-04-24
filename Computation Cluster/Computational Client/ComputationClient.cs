@@ -13,17 +13,19 @@ namespace Computational_Client
     {
         byte[] bytes = new byte[1024];
         private CommunicationModule communicationModule;
+        private Socket socket;
 
         public ComputationClient(string ip, int port)
         {
-            communicationModule = new CommunicationModule(ip, port);
+            communicationModule = new CommunicationModule(ip, port, 5000);
         }
 
         public void SendSolveRequest(SolveRequestMessage solveRequestMessage)
         {
             try
             {
-                communicationModule.Connect();
+                socket = communicationModule.SetupClient();
+                communicationModule.Connect(socket);
                 var serializer = new ComputationSerializer<SolveRequestMessage>();
                 var message = serializer.Serialize(solveRequestMessage);
                 byte[] byteMessage = Encoding.UTF8.GetBytes(message);
@@ -40,7 +42,7 @@ namespace Computational_Client
         {
             try
             {
-                communicationModule.Connect();
+                communicationModule.Connect(socket);
                 var serializer = new ComputationSerializer<SolutionRequestMessage>();
                 var message = serializer.Serialize(solutionRequestMessage);
                 byte[] byteMessage = Encoding.UTF8.GetBytes(message);
@@ -55,8 +57,8 @@ namespace Computational_Client
 
         public string ReceiveDataFromServer()
         {
-            communicationModule.Connect();
-            var data = communicationModule.ReceiveData();
+            communicationModule.Connect(socket);
+            var data = communicationModule.ReceiveData(socket);
             Trace.WriteLine("Response: " + data.ToString());
             return data;
         }

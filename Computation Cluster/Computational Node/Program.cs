@@ -19,7 +19,7 @@ namespace Computational_Node
                     node.SendStatus();
                     break;
                 default:
-                    node.Disconnect();
+                    
                     break;
             }
             Console.ReadKey();

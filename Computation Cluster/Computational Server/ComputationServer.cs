@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Communication_Library;
+using SuperSocket.SocketEngine.Configuration;
 
 namespace Computational_Server
 {
@@ -29,6 +30,7 @@ namespace Computational_Server
         public readonly TimeSpan DefaultTimeout;
         private ulong nodesId;
         private object nodesIdLock = new object();
+        private Socket serverSocket;
 
         public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule)
         {
@@ -66,13 +68,13 @@ namespace Computational_Server
 
         public void ListeningThread()
         {
-            communicationModule.SetupListening();
+            serverSocket = communicationModule.SetupServer();
             while (!listeningThreadCancellationTokenSource.IsCancellationRequested)
             {
-                var receivedMessage = communicationModule.ReceiveData();
-                var response = ProcessMessage(receivedMessage);
-                if(!String.IsNullOrEmpty(response))
-                    communicationModule.SendData(response);
+                var clientSocket = communicationModule.Accept(serverSocket);
+                var receivedMessage = communicationModule.ReceiveData(serverSocket);
+                if (!String.IsNullOrEmpty(receivedMessage))
+                    communicationModule.SendData(receivedMessage, clientSocket);
             }
         }
 
