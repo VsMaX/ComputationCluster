@@ -28,12 +28,11 @@ namespace Computational_Client
                 communicationModule.Connect(clientSocket);
                 var serializer = new ComputationSerializer<SolveRequestMessage>();
                 var message = serializer.Serialize(solveRequestMessage);
-                //byte[] byteMessage = Encoding.UTF8.GetBytes(message);
                 
                 communicationModule.SendData(message, clientSocket);
-                Thread.Sleep(50000);
+                var response = communicationModule.ReceiveData(clientSocket);
+                Trace.WriteLine("Client received: " + response);
                 communicationModule.CloseSocket(clientSocket);
-
             }
             catch (Exception ex)
             {

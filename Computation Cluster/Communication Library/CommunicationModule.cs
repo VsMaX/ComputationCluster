@@ -16,10 +16,7 @@ namespace Communication_Library
     {
         private string ip;
         private int port;
-        public Socket handler { get; set; }
         public readonly int ReadTimeoutMs;
-
-        private IPEndPoint ipEndPoint { get; set; }
 
         public static ManualResetEvent allDone = new ManualResetEvent(false);
 
@@ -47,7 +44,7 @@ namespace Communication_Library
             IPAddress ipAddr = IPAddress.Parse(this.ip);
 
             // Creates a network endpoint 
-            ipEndPoint = new IPEndPoint(ipAddr, this.port);
+            var ipEndPoint = new IPEndPoint(ipAddr, this.port);
 
             // Create one Socket object to listen the incoming connection 
             var socket = new Socket(
@@ -57,11 +54,10 @@ namespace Communication_Library
                 );
 
             // Associates a Socket with a local endpoint 
-            socket.Bind(this.ipEndPoint);
+            socket.Bind(ipEndPoint);
             // Places a Socket in a listening state and specifies the maximum 
             // Length of the pending connections queue 
             socket.Listen(100);
-            Trace.WriteLine("Socket is now listening on " + this.ipEndPoint.Address + " port: " + this.ipEndPoint.Port);
 
             return socket;
         }
@@ -79,11 +75,7 @@ namespace Communication_Library
             // Ensures the code to have permission to access a Socket 
             permission.Demand();
 
-            // Gets first IP address associated with a localhost 
             IPAddress ipAddr = IPAddress.Parse(ip);
-
-            // Creates a network endpoint 
-            ipEndPoint = new IPEndPoint(ipAddr, port);
 
             // Create one Socket object to setup Tcp connection 
             var socket = new Socket(
@@ -98,6 +90,9 @@ namespace Communication_Library
 
         public void Connect(Socket socket)
         {
+            // Gets first IP address associated with a localhost 
+            IPAddress ipAddr = IPAddress.Parse(ip);
+            var ipEndPoint = new IPEndPoint(ipAddr, port);
             // Establishes a connection to a remote host 
             socket.Connect(ipEndPoint);
         }
@@ -123,23 +118,24 @@ namespace Communication_Library
         {
             // Sends data to a connected Socket. 
             int bytesCount = 0;
-            byte[] message = new byte[str.Length * sizeof(char)];
-            Buffer.BlockCopy(str.ToCharArray(), 0, message, 0, message.Length);
+            byte[] message = ConvertStringToData(str);
 
             while (bytesCount != message.Length)
             {
                 bytesCount += socket.Send(message);
-                Trace.WriteLine("Sent " + bytesCount.ToString() + " bytes");
+                Trace.WriteLine("Sent " + bytesCount + " bytes");
             }
         }
 
         public string ReceiveData(Socket socket)
         {
-            //this.socket.ReceiveTimeout = 3000;
+            //socket.ReceiveTimeout = 3000;
             byte[] buffer = new byte[StateObject.BufferSize];
 
             // Converts byte array to string 
             var state = new StateObject();
+
+            state.workSocket = socket;
 
             var result = socket.BeginReceive(buffer, 0, StateObject.BufferSize, 0,
                 new AsyncCallback(ReadCallback), state);
