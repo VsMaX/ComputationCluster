@@ -81,7 +81,6 @@ namespace Computational_Server
                 Trace.WriteLine("Message processed, response: " + result);
                 if(!String.IsNullOrEmpty(result))
                     communicationModule.SendData(result, clientSocket);
-                Thread.Sleep(50000);
                 Trace.WriteLine("Closing socket");
                 communicationModule.CloseSocket(clientSocket);
             }

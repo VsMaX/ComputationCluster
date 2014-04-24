@@ -19,6 +19,7 @@ namespace Communication_Library
         public readonly int ReadTimeoutMs;
 
         public static ManualResetEvent allDone = new ManualResetEvent(false);
+        private static ManualResetEvent receiveDone = new ManualResetEvent(false);
 
         public CommunicationModule(string ip, int port, int readTimeoutMs)
         {
@@ -129,18 +130,19 @@ namespace Communication_Library
 
         public string ReceiveData(Socket socket)
         {
-            //socket.ReceiveTimeout = 3000;
-            byte[] buffer = new byte[StateObject.BufferSize];
-
             // Converts byte array to string 
             var state = new StateObject();
 
             state.workSocket = socket;
 
-            var result = socket.BeginReceive(buffer, 0, StateObject.BufferSize, 0,
+            receiveDone.Reset();
+
+            var result = socket.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
                 new AsyncCallback(ReadCallback), state);
 
-            result.AsyncWaitHandle.WaitOne(ReadTimeoutMs);
+            receiveDone.WaitOne(ReadTimeoutMs);
+
+            Trace.WriteLine("Ended receiving data");
 
             return state.sb.ToString();
         }
@@ -153,7 +155,7 @@ namespace Communication_Library
             // from the asynchronous state object.
             StateObject state = (StateObject)ar.AsyncState;
             Socket handler = state.workSocket;
-
+            Trace.WriteLine("Waiting for EndReceive");
             // Read data from the client socket. 
             int bytesRead = handler.EndReceive(ar);
 
@@ -166,19 +168,10 @@ namespace Communication_Library
                 // Check for end-of-file tag. If it is not there, read 
                 // more data.
                 content = state.sb.ToString();
-                if (content.IndexOf("<EOF>") > -1)
-                {
-                    // All the data has been read from the 
-                    // client. Display it on the console.
-                    Trace.WriteLine(String.Format("Read {0} bytes from socket. \n Data : {1}",
-                        content.Length, content));
-                }
-                else
-                {
-                    // Not all data received. Get more.
-                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReadCallback), state);
-                }
+                Trace.WriteLine(String.Format("Read {0} bytes from socket. \n Data : {1}",
+                    content.Length, content));
+
+                receiveDone.Set();
             }
         }
 

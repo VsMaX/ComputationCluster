@@ -29,12 +29,11 @@ namespace Computational_Client
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var computationalClient = new ComputationClient("127.0.0.1", 5555);
+            var computationalClient = new ComputationClient("127.0.0.1", 5555, 5000);
             byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
 
-            var sr = new SolveRequestMessage() { Data = null, ProblemType = "Ciężki problem", SolvingTimeout = 10000 };
+            var sr = new SolveRequestMessage() {Data = null, ProblemType = "Ciężki problem", SolvingTimeout = 5000};
             computationalClient.SendSolveRequest(sr);
-
             button1.ClickMode = ClickMode.Release;
             string sr2 = computationalClient.ReceiveDataFromServer();
             potwierdzenie.Text = sr2;
@@ -42,8 +41,7 @@ namespace Computational_Client
 
         private void Button2_Click(object sender, RoutedEventArgs e)
         {
-            var computationalClient = new ComputationClient("127.0.0.1", 5555);
-            byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
+            var computationalClient = new ComputationClient("127.0.0.1", 5555, 5000);
 
             var solutionRequest = new SolutionRequestMessage() { Id = 4 };
             computationalClient.SendSolutionRequest(solutionRequest);
@@ -72,7 +70,7 @@ namespace Computational_Client
                 string content = File.ReadAllText(filename);
                 wiadomosc.Text = content;
 
-                var computationalClient = new ComputationClient("127.0.0.1", 8080);
+                var computationalClient = new ComputationClient("127.0.0.1", 5555, 5000);
                 
                 //byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
                 var serializer = new ComputationSerializer<SolveRequestMessage>();

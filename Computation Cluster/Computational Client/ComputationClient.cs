@@ -15,9 +15,9 @@ namespace Computational_Client
         private ICommunicationModule communicationModule;
         private Socket clientSocket;
 
-        public ComputationClient(string ip, int port)
+        public ComputationClient(string ip, int port, int receiveTimeout)
         {
-            communicationModule = new CommunicationModule(ip, port, 50000);
+            communicationModule = new CommunicationModule(ip, port, receiveTimeout);
         }
 
         public void SendSolveRequest(SolveRequestMessage solveRequestMessage)
@@ -51,9 +51,9 @@ namespace Computational_Client
                 var message = serializer.Serialize(solutionRequestMessage);
                 //byte[] byteMessage = Encoding.UTF8.GetBytes(message);
                 communicationModule.SendData(message, clientSocket);
-                Thread.Sleep(50000);
+                var response = communicationModule.ReceiveData(clientSocket);
+                Trace.WriteLine("Client received: " + response);
                 communicationModule.CloseSocket(clientSocket);
-
             }
             catch (Exception ex)
             {
