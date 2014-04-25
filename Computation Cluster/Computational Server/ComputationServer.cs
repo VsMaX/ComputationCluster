@@ -73,16 +73,21 @@ namespace Computational_Server
             {
                 var clientSocket = communicationModule.Accept(serverSocket);
                 Trace.WriteLine("Accepted connection");
+
                 var receivedMessage = communicationModule.ReceiveData(clientSocket);
                 Trace.WriteLine("Received data: " + receivedMessage);
+
                 string result = String.Empty;
                 if (!String.IsNullOrEmpty(receivedMessage))
                     result = ProcessMessage(receivedMessage);
                 Trace.WriteLine("Message processed, response: " + result);
+
                 if(!String.IsNullOrEmpty(result))
                     communicationModule.SendData(result, clientSocket);
-                Trace.WriteLine("Closing socket");
+                Trace.WriteLine("Reponse sent ");
+
                 communicationModule.CloseSocket(clientSocket);
+                Trace.WriteLine("Socket closed");
             }
         }
 

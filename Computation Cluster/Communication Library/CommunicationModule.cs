@@ -12,7 +12,7 @@ using System.Xml;
 
 namespace Communication_Library
 {
-    public class CommunicationModule : BaseNode, IDisposable, ICommunicationModule
+    public class CommunicationModule : IDisposable, ICommunicationModule
     {
         private string ip;
         private int port;
@@ -137,7 +137,7 @@ namespace Communication_Library
 
             receiveDone.Reset();
 
-            var result = socket.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
+            socket.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
                 new AsyncCallback(ReadCallback), state);
 
             receiveDone.WaitOne(ReadTimeoutMs);
