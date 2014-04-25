@@ -12,6 +12,7 @@ using System.Xml;
 
 namespace Communication_Library
 {
+    [HandleException]
     public class CommunicationModule : IDisposable, ICommunicationModule
     {
         private string ip;
@@ -30,6 +31,7 @@ namespace Communication_Library
 
         public Socket SetupServer()
         {
+            Socket socket = null;
             // Creates one SocketPermission object for access restrictions
             var permission = new SocketPermission(
                 NetworkAccess.Accept, // Allowed to accept connections 
@@ -48,7 +50,7 @@ namespace Communication_Library
             var ipEndPoint = new IPEndPoint(ipAddr, this.port);
 
             // Create one Socket object to listen the incoming connection 
-            var socket = new Socket(
+            socket = new Socket(
                 ipAddr.AddressFamily,
                 SocketType.Stream,
                 ProtocolType.Tcp
