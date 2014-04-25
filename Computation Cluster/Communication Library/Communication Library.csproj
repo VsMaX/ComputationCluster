@@ -57,7 +57,7 @@
     <Compile Include="ComputationMessage.cs" />
     <Compile Include="ComputationSerializer.cs" />
     <Compile Include="DivideProblemMessage.cs" />
-    <Compile Include="HandleExceptionAttribute.cs" />
+    <Compile Include="MethodBoundaryAttribute.cs" />
     <Compile Include="ICommunicationModule.cs" />
     <Compile Include="PartialProblemsMessage.cs" />
     <Compile Include="RegisterMessage.cs" />

@@ -11,11 +11,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Communication_Library;
+using log4net;
 
 namespace Computational_Server
 {
     public class ComputationServer : BaseNode
     {
+        private static readonly ILog _logger =
+            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         private Thread listeningThread;
         private Thread processingThread;
         private CancellationTokenSource listeningThreadCancellationTokenSource;
@@ -71,29 +75,25 @@ namespace Computational_Server
             while (!listeningThreadCancellationTokenSource.IsCancellationRequested)
             {
                 var clientSocket = communicationModule.Accept(serverSocket);
-                Trace.WriteLine("Accepted connection");
 
                 var receivedMessage = communicationModule.ReceiveData(clientSocket);
-                Trace.WriteLine("Received data: " + receivedMessage);
 
                 string result = String.Empty;
                 if (!String.IsNullOrEmpty(receivedMessage))
                     result = ProcessMessage(receivedMessage);
-                Trace.WriteLine("Message processed, response: " + result);
 
                 if(!String.IsNullOrEmpty(result))
                     communicationModule.SendData(result, clientSocket);
-                Trace.WriteLine("Reponse sent ");
 
                 communicationModule.CloseSocket(clientSocket);
-                Trace.WriteLine("Socket closed");
             }
         }
 
         private string ProcessMessage(string message)
         {
             var messageName = this.GetMessageName(message);
-            Trace.WriteLine("Received " + messageName);
+            _logger.Debug("Received " + messageName);
+            _logger.Debug("XML Data: " + message);
             switch (messageName)
             {
                 case "Register":
@@ -115,8 +115,6 @@ namespace Computational_Server
                     return this.ProcessCaseSolutions(message);
 
                 default:
-                    Trace.WriteLine("Received another status");
-                    Trace.WriteLine("XML Data: " + message);
                     break;
             }
             return String.Empty;
@@ -233,8 +231,6 @@ namespace Computational_Server
             return SerializeMessage<SolveRequestResponseMessage>(solveRequestResponse);
         }
 
-        
-
         private string GetMessageName(string message)
         {
             XmlDocument doc = new XmlDocument();
@@ -244,7 +240,7 @@ namespace Computational_Server
             }
             catch (Exception ex)
             {
-                Trace.WriteLine("Error parsing xml document: " + message + "exception: " + ex.ToString());
+                _logger.Error("Error parsing xml document: " + message + "exception: " + ex.ToString());
                 return String.Empty;
 
                 //TODO logowanie
@@ -257,7 +253,7 @@ namespace Computational_Server
         {
             listeningThreadCancellationTokenSource.Cancel();
             listeningThread.Join();
-            Trace.WriteLine("Stopped listening");
+            _logger.Info("Stopped listening");
         }
     }
 }

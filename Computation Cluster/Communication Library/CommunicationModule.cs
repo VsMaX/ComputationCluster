@@ -9,10 +9,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using log4net;
+using log4net.Repository.Hierarchy;
 
 namespace Communication_Library
 {
-    [HandleException]
+    [MethodBoundary]
     public class CommunicationModule : IDisposable, ICommunicationModule
     {
         private string ip;
@@ -21,6 +23,9 @@ namespace Communication_Library
 
         public static ManualResetEvent allDone = new ManualResetEvent(false);
         private static ManualResetEvent receiveDone = new ManualResetEvent(false);
+
+        private static readonly ILog _logger =
+            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         public CommunicationModule(string ip, int port, int readTimeoutMs)
         {
@@ -108,12 +113,12 @@ namespace Communication_Library
         public void CloseSocket(Socket socket)
         {
             // Disables sends and receives on a Socket. 
-            if (socket != null && !socket.Connected)
+            if (socket != null)
             {
                 socket.Shutdown(SocketShutdown.Both);
+                socket.Close();
             }
 
-            socket.Close();
             //Closes the Socket connection and releases all resources 
         }
 
@@ -123,10 +128,12 @@ namespace Communication_Library
             int bytesCount = 0;
             byte[] message = ConvertStringToData(str);
 
+            _logger.Debug("Sent message: " + str);
+
             while (bytesCount != message.Length)
             {
                 bytesCount += socket.Send(message);
-                Trace.WriteLine("Sent " + bytesCount + " bytes");
+                _logger.Debug("Sent " + bytesCount + " bytes");
             }
         }
 
@@ -144,7 +151,7 @@ namespace Communication_Library
 
             receiveDone.WaitOne(ReadTimeoutMs);
 
-            Trace.WriteLine("Ended receiving data");
+            _logger.Debug("Ended receiving data");
 
             return state.sb.ToString();
         }
@@ -157,7 +164,8 @@ namespace Communication_Library
             // from the asynchronous state object.
             StateObject state = (StateObject)ar.AsyncState;
             Socket handler = state.workSocket;
-            Trace.WriteLine("Waiting for EndReceive");
+            
+            _logger.Debug("Waiting for EndReceive");
             // Read data from the client socket. 
             int bytesRead = handler.EndReceive(ar);
 
@@ -170,11 +178,10 @@ namespace Communication_Library
                 // Check for end-of-file tag. If it is not there, read 
                 // more data.
                 content = state.sb.ToString();
-                Trace.WriteLine(String.Format("Read {0} bytes from socket. \n Data : {1}",
+                _logger.Debug(String.Format("Read {0} bytes from socket. \n Data : {1}",
                     content.Length, content));
-
-                receiveDone.Set();
             }
+            receiveDone.Set();
         }
 
         public static string ConvertDataToString(byte[] buffer, int bytesRead)
