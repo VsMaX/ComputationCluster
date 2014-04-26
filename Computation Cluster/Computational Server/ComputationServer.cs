@@ -26,7 +26,7 @@ namespace Computational_Server
         private CancellationTokenSource processingThreadCancellationToken;
         
         private ConcurrentQueue<SolveRequestMessage> solveRequestMessageQueue;
-        public ConcurrentDictionary<ulong, NodeEntry> ActiveNodes { get; set; }
+        public List<NodeEntry> ActiveNodes { get; set; }
         Socket handler;
         private ICommunicationModule communicationModule;
 
@@ -38,7 +38,7 @@ namespace Computational_Server
         public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule)
         {
             solveRequestMessageQueue = new ConcurrentQueue<SolveRequestMessage>();
-            ActiveNodes = new ConcurrentDictionary<ulong, NodeEntry>();
+            ActiveNodes = new List<NodeEntry>();
             DefaultTimeout = nodeTimeout;
             nodesId = 0;
             this.communicationModule = communicationModule;
@@ -66,7 +66,18 @@ namespace Computational_Server
 
         private void ProcessingThread()
         {
-            
+            while (!processingThreadCancellationToken.IsCancellationRequested)
+            {
+                lock (ActiveNodes)
+                {
+                    ActiveNodes.RemoveAll(HasNodeExpired);
+                }
+            }
+        }
+
+        private bool HasNodeExpired(NodeEntry x)
+        {
+            return (DateTime.Now - x.LastStatusSentTime) > DefaultTimeout;
         }
 
         public void ListeningThread()
@@ -125,10 +136,9 @@ namespace Computational_Server
             var registerMessage = DeserializeMessage<RegisterMessage>(message);
 
             var newId = GenerateNewNodeId();
-            
-            if (RegisterNode(newId, registerMessage.Type, registerMessage.SolvableProblems.ToList(),
-                    registerMessage.ParallelThreads) < 0)
-                LogError("");
+
+            RegisterNode(newId, registerMessage.Type, registerMessage.SolvableProblems.ToList(),
+                registerMessage.ParallelThreads);
 
             var registerResponse = new RegisterResponseMessage()
             {
@@ -158,12 +168,14 @@ namespace Computational_Server
         /// <param name="solvableProblems"></param>
         /// <param name="parallelThreads"></param>
         /// <returns>0 if success, negative value if there was an error</returns>
-        private int RegisterNode(ulong newId, RegisterType type, List<string> solvableProblems, byte parallelThreads)
+        private void RegisterNode(ulong newId, RegisterType type, List<string> solvableProblems, byte parallelThreads)
         {
             var node = new NodeEntry(newId, type, solvableProblems, parallelThreads);
-            if (ActiveNodes.TryAdd(newId, node))
-                return -1;
-            return 0;
+            lock (ActiveNodes)
+            {
+                ActiveNodes.Add(node);
+                _logger.Debug("Node added to server list");
+            }
         }
 
         private string ProcessCaseSolutions(string message)

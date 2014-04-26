@@ -13,7 +13,7 @@ namespace Computational_Server
         public RegisterType Type { get; set; }
         public List<string> SolvingProblems { get; set; }
         public byte ParallelThreads { get; set; }
-        public DateTime LastActive { get; set; }
+        public DateTime LastStatusSentTime { get; set; }
 
         public NodeEntry(ulong id, RegisterType type, List<string> solvingProblems, byte parallelThreads)
         {
@@ -21,7 +21,7 @@ namespace Computational_Server
             this.Type = type;
             this.SolvingProblems = solvingProblems;
             this.ParallelThreads = parallelThreads;
-            LastActive = DateTime.Now;
+            LastStatusSentTime = DateTime.Now;
         }
     }
 }
