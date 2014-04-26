@@ -21,7 +21,7 @@ namespace ComputationTests
 
         private void StartServer()
         {
-            server = new ComputationServer(new TimeSpan(0,0,30), null);
+            server = new ComputationServer(new TimeSpan(0,0,30), null, 1000);
             server.StartServer();
         }
 

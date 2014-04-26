@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
@@ -24,24 +25,27 @@ namespace Computational_Server
         private Thread processingThread;
         private CancellationTokenSource listeningThreadCancellationTokenSource;
         private CancellationTokenSource processingThreadCancellationToken;
-        
-        private ConcurrentQueue<SolveRequestMessage> solveRequestMessageQueue;
+
+        private ConcurrentDictionary<ulong, SolveRequestMessage> solveRequestMessages;
         public List<NodeEntry> ActiveNodes { get; set; }
         Socket handler;
         private ICommunicationModule communicationModule;
-
+        public readonly long processingThreadSleepTime;
         public readonly TimeSpan DefaultTimeout;
         private ulong nodesId;
         private object nodesIdLock = new object();
         private Socket serverSocket;
+        private object solutionIdLock;
+        private ulong solutionId;
 
-        public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule)
+        public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule, long processingThreadSleepTime)
         {
-            solveRequestMessageQueue = new ConcurrentQueue<SolveRequestMessage>();
+            solveRequestMessages = new ConcurrentDictionary<ulong, SolveRequestMessage>();
             ActiveNodes = new List<NodeEntry>();
             DefaultTimeout = nodeTimeout;
             nodesId = 0;
             this.communicationModule = communicationModule;
+            this.processingThreadSleepTime = processingThreadSleepTime;
         }
 
         public void StartServer()
@@ -72,6 +76,7 @@ namespace Computational_Server
                 {
                     ActiveNodes.RemoveAll(HasNodeExpired);
                 }
+                Thread.Sleep(1000);
             }
         }
 
@@ -236,16 +241,27 @@ namespace Computational_Server
         private string ProcessCaseSolveRequest(string message)
         {
             var deserializedMessage = DeserializeMessage<SolveRequestMessage>(message);
+            ulong solutionId = GenerateNewSolutionId();
+            if(!solveRequestMessages.TryAdd(solutionId, deserializedMessage))
+                _logger.Error("Could not add SolveRequest to dictionary. SolutionId: " + solutionId + ", message: " + deserializedMessage);
+            var solveRequestResponse = new SolveRequestResponseMessage() { Id = solutionId };
+            return SerializeMessage(solveRequestResponse);
+        }
 
-            //TO DO Oczekiwanie na wlasciwego TM i przesłanie do niego problemu
-            solveRequestMessageQueue.Enqueue(deserializedMessage);
-            var solveRequestResponse = new SolveRequestResponseMessage() { Id = 1 };
-            return SerializeMessage<SolveRequestResponseMessage>(solveRequestResponse);
+        private ulong GenerateNewSolutionId()
+        {
+            ulong newSolutionId = 0;
+            lock (solutionIdLock)
+            {
+                newSolutionId = solutionId;
+                solutionId++;
+            }
+            return newSolutionId;
         }
 
         private string GetMessageName(string message)
         {
-            XmlDocument doc = new XmlDocument();
+            var doc = new XmlDocument();
             try
             {
                 doc.LoadXml(message);
