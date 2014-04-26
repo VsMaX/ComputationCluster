@@ -18,7 +18,7 @@ namespace Task_Manager
                     node.RegisterAtServer();
                     break;
                 case ConsoleKey.S:
-                    node.SendStatus();
+                    //node.SendStatus();
                     break;
             }
 

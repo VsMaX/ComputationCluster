@@ -36,7 +36,7 @@ namespace Communication_Library
 
     public enum StatusThreadState
     {
-        Idle,
+        Idle = 1,
         Busy,
     }
 }
