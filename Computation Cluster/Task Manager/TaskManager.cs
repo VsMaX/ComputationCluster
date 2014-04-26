@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Communication_Library;
+using log4net;
 using UCCTaskSolver;
 using System.Threading;
 using System.Xml;
@@ -16,6 +18,9 @@ namespace Task_Manager
 {
     public class TaskManager : BaseNode
     {
+        private static readonly ILog _logger =
+            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         private int serverPort;
         private string serverIp;
         private ICommunicationModule communicationModule;
@@ -35,7 +40,7 @@ namespace Task_Manager
 
         public TaskManager(string serverIp, int serverPort)
         {
-            communicationModule = new CommunicationModule(serverIp, serverPort, Timeout.Milliseconds);
+            communicationModule = new CommunicationModule(serverIp, serverPort, 5000);
         }
 
         public void StartTM()
@@ -43,6 +48,7 @@ namespace Task_Manager
             RegisterAtServer();
             StartStatusThread();
             StartProcessingThread();
+            _logger.Info("Starting TM");
         }
 
         public void RegisterAtServer()
@@ -61,11 +67,11 @@ namespace Task_Manager
             communicationModule.SendData(messageString, socket);
 
             var response = communicationModule.ReceiveData(socket);
-            Trace.WriteLine("Response: " + response.ToString());
+            _logger.Info("Response: " + response.ToString());
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
             this.NodeId = deserializedResponse.Id;
             this.Timeout = deserializedResponse.TimeoutTimeSpan;
-            Trace.WriteLine("Response has been deserialized");
+            _logger.Info("Response has been deserialized");
             //communicationModule.Disconnect();
         }
 

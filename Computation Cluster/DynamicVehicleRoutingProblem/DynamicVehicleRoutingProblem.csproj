@@ -38,7 +38,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="UCCTaskSolver">
-      <HintPath>..\..\..\..\..\..\..\..\..\Desktop\UCCv1.1\UCCTaskSolver.dll</HintPath>
+      <HintPath>C:\Users\mike\Desktop\UCCTaskSolver.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
