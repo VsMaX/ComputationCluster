@@ -25,6 +25,17 @@ namespace DVRP
         public Objective Objective { get; set; }
 
 
+        public static DVRP Parse(string input)
+        {
+            if (String.IsNullOrWhiteSpace(input)) throw new ArgumentException(input);
+
+            var instance = new DVRP();
+
+            
+
+            return instance;
+        }
+
     }
 
     public enum ProblemType

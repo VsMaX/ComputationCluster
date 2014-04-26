@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{168BEE
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicVehicleRoutingProblem", "DynamicVehicleRoutingProblem\DynamicVehicleRoutingProblem.csproj", "{2DD11613-1976-491D-A777-B47FA80B91F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -50,6 +52,10 @@ Global
 		{B80E8EA5-A28C-4627-B1A5-841ADB038AF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B80E8EA5-A28C-4627-B1A5-841ADB038AF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B80E8EA5-A28C-4627-B1A5-841ADB038AF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DD11613-1976-491D-A777-B47FA80B91F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DD11613-1976-491D-A777-B47FA80B91F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DD11613-1976-491D-A777-B47FA80B91F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DD11613-1976-491D-A777-B47FA80B91F4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -54,6 +54,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="ComputationClientTests.cs" />
+    <Compile Include="DVRPTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SerializationTests.cs" />
   </ItemGroup>
@@ -74,9 +75,21 @@
       <Project>{1942848c-9ea6-4c89-bf62-27926fcbb5fe}</Project>
       <Name>Computational Server</Name>
     </ProjectReference>
+    <ProjectReference Include="..\DynamicVehicleRoutingProblem\DynamicVehicleRoutingProblem.csproj">
+      <Project>{2dd11613-1976-491d-a777-b47fa80b91f4}</Project>
+      <Name>DynamicVehicleRoutingProblem</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="DVRPTestData\okul12D.vrp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="DVRPTestData\okul13D.vrp" />
+    <None Include="DVRPTestData\okul14D.vrp" />
+    <None Include="DVRPTestData\okul15D.vrp" />
+    <None Include="DVRPTestData\okul16D.vrp" />
+    <None Include="DVRPTestData\okul17D.vrp" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="XMLTestData\DivideProblemMessage.xml">
