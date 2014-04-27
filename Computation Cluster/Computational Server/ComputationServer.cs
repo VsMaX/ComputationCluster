@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -229,17 +230,23 @@ namespace Computational_Server
             string result = String.Empty;
             var deserializedStatusMessage = DeserializeMessage<StatusMessage>(message);
             _logger.Info("Received status from nodeId: " + deserializedStatusMessage.Id);
-            UpdateNodesLifetime(deserializedStatusMessage);
-
+            
             //TODO update nodes lifetime
-            //TODO if status comes from TM, get all SolveRequests and send Divide to TM
-            //TODO if status comes from CN, send all problems divided for this node
+            UpdateNodesLifetime(deserializedStatusMessage);
 
             var node = GetActiveNode(deserializedStatusMessage.Id);
 
+            //TODO if status comes from TM, get all SolveRequests and send Divide to TM
+            //TODO if status comes from CN, send all problems divided for this node
             var nodeTask = GetTaskForNode(node);
+            if (nodeTask == null)
+                return "";
 
-            return SerializeMessage(nodeTask);
+            var declaringType = nodeTask.GetType().DeclaringType;
+            MethodInfo method = typeof(ComputationServer).GetMethod("SerializeMessage");
+            MethodInfo generic = method.MakeGenericMethod(declaringType);
+
+            return (string)generic.Invoke(this, new object[] { nodeTask });
         }
 
         private ComputationMessage GetTaskForNode(NodeEntry node)
@@ -249,11 +256,16 @@ namespace Computational_Server
                 case RegisterType.TaskManager:
                     return GetTaskForTaskManager(node);
                 case RegisterType.ComputationalNode:
-                    return null;
+                    return GetTaskForComputationalNode(node);
                 default:
                     _logger.Error("GetTaskForNode error: Unknown node type");
                     return null;
             }
+        }
+
+        private ComputationMessage GetTaskForComputationalNode(NodeEntry node)
+        {
+            throw new NotImplementedException();
         }
 
         private ComputationMessage GetTaskForTaskManager(NodeEntry node)

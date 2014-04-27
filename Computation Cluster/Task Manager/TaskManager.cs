@@ -88,15 +88,23 @@ namespace Task_Manager
         {
             processingThreadCancellationToken = new CancellationTokenSource();
             processingThread = new Thread(ProcessingThread);
-            //processingThread.Start();
+            processingThread.Start();
         }
 
         private void ProcessingThread()
         {
             while (!processingThreadCancellationToken.IsCancellationRequested)
             {
-                
+                ProcessProblemDivision();
+                Thread.Sleep(Timeout);
             }
+        }
+
+        private void ProcessProblemDivision()
+        {
+            DivideProblemMessage divideProblemMessage = null;
+            if (!divideProblemMessageQueue.TryDequeue(out divideProblemMessage))
+                return;
         }
 
         public void SendStatusThread()
@@ -125,36 +133,25 @@ namespace Task_Manager
                 
                 ProcessMessage(receivedMessage);
 
-                Thread.Sleep(this.Timeout);
+                Thread.Sleep(Timeout);
             }
         }
 
-        private string ProcessMessage(string message)
+        private void ProcessMessage(string message)
         {
             var messageName = this.GetMessageName(message);
-            //_logger.Debug("Received " + messageName);
-            //_logger.Debug("XML Data: " + message);
+            
             switch (messageName)
             {
-                case "RegisterResponse":
-                    return this.ProcessCaseRegisterResponse(message);
-
                 case "DivideProblem":
-                    return this.ProcessCaseDivideProblem(message);
-
+                    this.ProcessCaseDivideProblem(message);
+                    break;
                 case "PartialProblems":
-                    return this.ProcessCasePartialProblems(message);
+                    this.ProcessCasePartialProblems(message);
+                    break;
                 default:
                     break;
             }
-            return String.Empty;
-        }
-
-        private string ProcessCaseRegisterResponse(string message)
-        {
-            var deserializedMessage = DeserializeMessage<SolutionsMessage>(message);
-
-            return string.Empty;
         }
 
         private string ProcessCaseDivideProblem(string message)
@@ -181,10 +178,8 @@ namespace Task_Manager
             }
             catch (Exception ex)
             {
-                //_logger.Error("Error parsing xml document: " + message + "exception: " + ex.ToString());
+                _logger.Error("Error parsing xml document: " + message + "exception: " + ex.ToString());
                 return String.Empty;
-
-                //TODO logowanie
             }
             XmlElement root = doc.DocumentElement;
             return root.Name;
@@ -192,9 +187,11 @@ namespace Task_Manager
 
         public void Stop()
         {
+            processingThreadCancellationToken.Cancel();
             statusThreadCancellationTokenSource.Cancel();
-            statusThread.Join();
-            //_logger.Info("Stopped listening");
+            statusThread.Join((int)Timeout.TotalMilliseconds * 10);
+            processingThread.Join((int)Timeout.TotalMilliseconds * 10);
+            _logger.Info("TaskManager stopped");
         }
 
         public void Disconnect()

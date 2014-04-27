@@ -117,7 +117,6 @@ namespace Communication_Library
             {
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
-                _logger.Info("Socket closed");
             }
             else
             {
