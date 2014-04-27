@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using UCCTaskSolver;
 
 namespace DynamicVehicleRoutingProblem
 {
@@ -48,6 +49,8 @@ namespace DynamicVehicleRoutingProblem
         public Depot[] Depots { get; set; }
         public Client[] Clients { get; set; }
         public Location[] Locations { get; set;}
+
+        public int[] ClientID { get; set; } // pomocnicz tablica wykorzystywana do Divide
 
         public DVRP()
         {
@@ -145,6 +148,7 @@ namespace DynamicVehicleRoutingProblem
                     case "NUM_VISITS":
                         instance.NumVistis = int.Parse(split[1]);
                         instance.Clients = new Client[instance.NumVistis];
+                        instance.ClientID = new int[instance.NumVistis];
                         break;
                     case "NUM_LOCATIONS":
                         instance.NumLocations = int.Parse(split[1]);
@@ -172,6 +176,7 @@ namespace DynamicVehicleRoutingProblem
                             string[] clientsSplit = DVRP.SplitText(lines[++i]);
                             instance.Clients[j].visitID = int.Parse(clientsSplit[0]);
                             instance.Clients[j].size = int.Parse(clientsSplit[1]);
+                            instance.ClientID[j] = int.Parse(clientsSplit[0]);
                         }
                         break;
                     case "LOCATION_COORD_SECTION":
@@ -234,7 +239,6 @@ namespace DynamicVehicleRoutingProblem
 
             return instance;
         }
-
     }
 
     public enum ProblemType

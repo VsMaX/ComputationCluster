@@ -59,5 +59,34 @@ namespace DynamicVehicleRoutingProblem
             else
                 return true;
         }
+
+        public override string ToString()
+        {
+            string result = "";
+            //VisitID
+            result += this.visitID.ToString() + " ";
+            //LocationID
+            result += this.locationID.ToString() + " ";
+            return result;
+        }
+
+        public static string ClientsToString(int[][][] subsets)
+        {
+            string result ="";
+            for (int i = 0; i <=0; i++)
+            {
+                result += "SET\n";
+                for (int j = 0; j < subsets.ElementAt(i).Count(); j++)
+                {
+                    result += "PATH\n";
+                    for (int k = 0; k < subsets.ElementAt(i).ElementAt(j).Count(); k++)
+                    {
+                        result += subsets.ElementAt(i).ElementAt(j).ElementAt(k).ToString() + "\n"; 
+                    }
+                }
+ 
+            }
+            return result; 
+        }
     }
 }
