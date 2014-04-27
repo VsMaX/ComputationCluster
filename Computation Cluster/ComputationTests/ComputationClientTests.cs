@@ -17,7 +17,6 @@ namespace ComputationTests
         private int computationServerPort = 22222;
         private string computationServerIp = "127.0.0.1";
         private ComputationServer server;
-        
 
         private void StartServer()
         {

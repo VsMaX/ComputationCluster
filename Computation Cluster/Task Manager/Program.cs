@@ -15,17 +15,12 @@ namespace Task_Manager
             log4net.Config.XmlConfigurator.Configure(new FileInfo("log4net.config"));
             int receiveDataTimeout = Int32.Parse(ConfigurationManager.AppSettings["ReceiveDataTimeout"]);
             var node = new TaskManager("127.0.0.1", 5555, receiveDataTimeout);
+            node.Start();
             var key = Console.ReadKey();
-            switch (key.Key)
-            {
-                case ConsoleKey.R:
-                    node.Start();
-                    break;
-                case ConsoleKey.S:
-                    //node.SendStatus();
-                    break;
-            }
+            
             //node.DivideProblem();
+            Console.ReadKey();
+            node.Stop();
             Console.ReadKey();
         }
     }

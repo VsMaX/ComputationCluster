@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -16,6 +17,7 @@ using System.Collections.Concurrent;
 
 namespace Task_Manager
 {
+    [MethodBoundary]
     public class TaskManager : BaseNode
     {
         private int serverPort;
@@ -23,9 +25,9 @@ namespace Task_Manager
         private ICommunicationModule communicationModule;
         public TSP tsp;
         public ulong NodeId { get; set; }
+        [DefaultValue(1000)]
         public TimeSpan Timeout { get; set; }
         public int NumberOfThreads { get; set; }
-        private Socket socket;
 
         private Thread statusThread;
         private Thread processingThread;
@@ -60,19 +62,19 @@ namespace Task_Manager
             };
             var messageString = SerializeMessage(registerMessage);
 
-            socket = communicationModule.SetupClient();
+            var socket = communicationModule.SetupClient();
             communicationModule.Connect(socket);
             communicationModule.SendData(messageString, socket);
 
             var response = communicationModule.ReceiveData(socket);
-            _logger.Info("Response: " + response.ToString());
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
 
             this.NodeId = deserializedResponse.Id;
             this.Timeout = deserializedResponse.TimeoutTimeSpan;
 
-            _logger.Info("Response has been deserialized");
             communicationModule.CloseSocket(socket);
+            _logger.Info("Succesfully registered at server. Assigned id: " + this.NodeId + " received timeout: " +
+                         deserializedResponse.Timeout);
         }
 
         private void StartStatusThread()
@@ -86,7 +88,7 @@ namespace Task_Manager
         {
             processingThreadCancellationToken = new CancellationTokenSource();
             processingThread = new Thread(ProcessingThread);
-            processingThread.Start();
+            //processingThread.Start();
         }
 
         private void ProcessingThread()
@@ -99,32 +101,30 @@ namespace Task_Manager
 
         public void SendStatusThread()
         {
-            socket = communicationModule.SetupClient();
             while (!statusThreadCancellationTokenSource.IsCancellationRequested)
             {
-                var statusMessage = new StatusMessage(this.NodeId);
+                var socket = communicationModule.SetupClient();
+                communicationModule.Connect(socket);
+
                 var st= new StatusThread()
                 {
                     HowLong = (ulong)(DateTime.Now-startTime).TotalMilliseconds, 
-                    TaskId =1, 
-                    State = state, 
-                    ProblemType = taskSolver.Name, 
+                    TaskId = 1,
+                    State = StatusThreadState.Idle, 
+                    ProblemType = "DVRP", 
                     ProblemInstanceId = 1, 
                     TaskIdSpecified = true
                 };
-                statusMessage.Threads = new StatusThread[] { st };
+                var statusMessage = new StatusMessage(this.NodeId, new StatusThread[] { st });
                 var statusMessageString = SerializeMessage(statusMessage);
                 communicationModule.SendData(statusMessageString, socket);
 
                 var receivedMessage = communicationModule.ReceiveData(socket);
-                string result = String.Empty;
-                if (!String.IsNullOrEmpty(receivedMessage))
-                    result = ProcessMessage(receivedMessage);
-
-                if (!String.IsNullOrEmpty(result))
-                    communicationModule.SendData(result, socket);
-
+                
                 communicationModule.CloseSocket(socket);
+                
+                ProcessMessage(receivedMessage);
+
                 Thread.Sleep(this.Timeout);
             }
         }
@@ -190,7 +190,7 @@ namespace Task_Manager
             return root.Name;
         }
 
-        public void StopTM()
+        public void Stop()
         {
             statusThreadCancellationTokenSource.Cancel();
             statusThread.Join();

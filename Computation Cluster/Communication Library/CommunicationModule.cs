@@ -117,6 +117,11 @@ namespace Communication_Library
             {
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
+                _logger.Info("Socket closed");
+            }
+            else
+            {
+                _logger.Error("Could not close socket");
             }
 
             //Closes the Socket connection and releases all resources 
@@ -181,6 +186,7 @@ namespace Communication_Library
                 _logger.Debug(String.Format("Read {0} bytes from socket. \n Data : {1}",
                     content.Length, content));
             }
+            _logger.Debug("Received data: " + content);
             receiveDone.Set();
         }
 
