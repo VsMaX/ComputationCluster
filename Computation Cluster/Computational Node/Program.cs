@@ -10,7 +10,7 @@ namespace Computational_Node
     {
         static void Main(string[] args)
         {
-            var node = new ComputationnalNode("127.0.0.1", 8080);
+            var node = new ComputationnalNode("127.0.0.1", 5555, 5000);
             Console.WriteLine("Press S to send status message");
             var key = Console.ReadKey();
             switch (key.Key)

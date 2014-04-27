@@ -18,9 +18,6 @@ namespace Computational_Server
 {
     public class ComputationServer : BaseNode
     {
-        private static readonly ILog _logger =
-            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
         private Thread listeningThread;
         private Thread processingThread;
         private CancellationTokenSource listeningThreadCancellationTokenSource;
@@ -257,24 +254,6 @@ namespace Computational_Server
                 solutionId++;
             }
             return newSolutionId;
-        }
-
-        private string GetMessageName(string message)
-        {
-            var doc = new XmlDocument();
-            try
-            {
-                doc.LoadXml(message);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Error parsing xml document: " + message + "exception: " + ex.ToString());
-                return String.Empty;
-
-                //TODO logowanie
-            }
-            XmlElement root = doc.DocumentElement;
-            return root.Name;
         }
 
         public void StopServer()

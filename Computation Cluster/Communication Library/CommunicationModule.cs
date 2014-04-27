@@ -128,7 +128,7 @@ namespace Communication_Library
             int bytesCount = 0;
             byte[] message = ConvertStringToData(str);
 
-            _logger.Debug("Sent message: " + str);
+            _logger.Debug("Sending message: " + str);
 
             while (bytesCount != message.Length)
             {

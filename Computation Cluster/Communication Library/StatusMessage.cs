@@ -11,6 +11,20 @@ namespace Communication_Library
     [XmlRoot(ElementName = "Status", Namespace = "http://www.mini.pw.edu.pl/ucc/")]
     public class StatusMessage : ComputationMessage
     {
+        public StatusMessage() { }
+
+        public StatusMessage(ulong id)
+        {
+            this.Id = id;
+            this.Threads = new StatusThread[0];
+        }
+
+        public StatusMessage(ulong id, StatusThread[] threads)
+        {
+            this.Id = id;
+            this.Threads = threads;
+        }
+
         [XmlElement]
         public ulong Id { get; set; }
         [XmlArray("Threads")]

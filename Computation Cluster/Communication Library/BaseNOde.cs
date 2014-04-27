@@ -4,11 +4,16 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using log4net;
 
 namespace Communication_Library
 {
     public class BaseNode
     {
+        protected static readonly ILog _logger =
+            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         protected string SerializeMessage<T>(T message) where T : ComputationMessage
         {
             var serializer = new ComputationSerializer<T>();
@@ -18,7 +23,7 @@ namespace Communication_Library
             }
             catch (Exception ex)
             {
-                LogError(ex.ToString());
+                _logger.Error(ex.ToString());
                 return String.Empty;
             }
         }
@@ -32,19 +37,25 @@ namespace Communication_Library
             }
             catch (Exception ex)
             {
-                LogError(ex.ToString());
+                _logger.Error(ex.ToString());
                 return null;
             }
         }
 
-        protected void LogError(string message)
+        protected virtual string GetMessageName(string message)
         {
-            
-        }
-
-        protected void LogError(Exception ex)
-        {
-            
+            var doc = new XmlDocument();
+            try
+            {
+                doc.LoadXml(message);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error parsing xml document: " + message + "exception: " + ex.ToString());
+                return String.Empty;
+            }
+            XmlElement root = doc.DocumentElement;
+            return root.Name;
         }
     }
 }

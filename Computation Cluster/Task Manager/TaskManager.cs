@@ -18,15 +18,13 @@ namespace Task_Manager
 {
     public class TaskManager : BaseNode
     {
-        private static readonly ILog _logger =
-            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
         private int serverPort;
         private string serverIp;
         private ICommunicationModule communicationModule;
         public TSP tsp;
         public ulong NodeId { get; set; }
         public TimeSpan Timeout { get; set; }
+        public int NumberOfThreads { get; set; }
         private Socket socket;
 
         private Thread statusThread;
@@ -38,12 +36,13 @@ namespace Task_Manager
         private StatusThreadState state;
         private ConcurrentQueue<DivideProblemMessage> divideProblemMessageQueue;
 
-        public TaskManager(string serverIp, int serverPort)
+        public TaskManager(string serverIp, int serverPort, int receiveDataTimeout)
         {
-            communicationModule = new CommunicationModule(serverIp, serverPort, 5000);
+            communicationModule = new CommunicationModule(serverIp, serverPort, receiveDataTimeout);
+            startTime = DateTime.Now;
         }
 
-        public void StartTM()
+        public void Start()
         {
             RegisterAtServer();
             StartStatusThread();
@@ -55,12 +54,11 @@ namespace Task_Manager
         {
             var registerMessage = new RegisterMessage()
             {
-                ParallelThreads = 8,//???
+                ParallelThreads = 1,//???
                 SolvableProblems = new string[] { "DVRP" },
                 Type = RegisterType.TaskManager
             };
             var messageString = SerializeMessage(registerMessage);
-            //var messageBytes = CommunicationModule.ConvertStringToData(messageString);
 
             socket = communicationModule.SetupClient();
             communicationModule.Connect(socket);
@@ -69,10 +67,12 @@ namespace Task_Manager
             var response = communicationModule.ReceiveData(socket);
             _logger.Info("Response: " + response.ToString());
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
+
             this.NodeId = deserializedResponse.Id;
             this.Timeout = deserializedResponse.TimeoutTimeSpan;
+
             _logger.Info("Response has been deserialized");
-            //communicationModule.Disconnect();
+            communicationModule.CloseSocket(socket);
         }
 
         private void StartStatusThread()
@@ -93,38 +93,25 @@ namespace Task_Manager
         {
             while (!processingThreadCancellationToken.IsCancellationRequested)
             {
-                if (divideProblemMessageQueue.Count == 0)
-                    state = StatusThreadState.Idle;
-                else
-                {
-                    state = StatusThreadState.Busy;
-                    DivideProblemMessage dpm;
-                    divideProblemMessageQueue.TryDequeue(out dpm);
-                    taskSolver = new TaskSolver<DVRP>(dpm.Data);
-                    taskSolver.DivideProblem((int)dpm.ComputationalNodes);
-                }
-                //lock (ActiveNodes)
-                //{
-                //    ActiveNodes.RemoveAll(HasNodeExpired);
-                //}
-                Thread.Sleep(1000);
+                
             }
         }
-
-        //private bool HasNodeExpired(NodeEntry x)
-        //{
-        //    return (DateTime.Now - x.LastStatusSentTime) > DefaultTimeout;
-        //}
 
         public void SendStatusThread()
         {
             socket = communicationModule.SetupClient();
             while (!statusThreadCancellationTokenSource.IsCancellationRequested)
             {
-                //send status
-                StatusMessage statusMessage = new StatusMessage();
-                statusMessage.Id = this.NodeId;
-                var st= new StatusThread() { HowLong = (ulong)(DateTime.Now-startTime).TotalMilliseconds, TaskId =1 , State = state, ProblemType = taskSolver.Name, ProblemInstanceId = 1, TaskIdSpecified = true };
+                var statusMessage = new StatusMessage(this.NodeId);
+                var st= new StatusThread()
+                {
+                    HowLong = (ulong)(DateTime.Now-startTime).TotalMilliseconds, 
+                    TaskId =1, 
+                    State = state, 
+                    ProblemType = taskSolver.Name, 
+                    ProblemInstanceId = 1, 
+                    TaskIdSpecified = true
+                };
                 statusMessage.Threads = new StatusThread[] { st };
                 var statusMessageString = SerializeMessage(statusMessage);
                 communicationModule.SendData(statusMessageString, socket);
