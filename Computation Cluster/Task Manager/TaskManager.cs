@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -16,31 +17,30 @@ using System.Collections.Concurrent;
 
 namespace Task_Manager
 {
+    [MethodBoundary]
     public class TaskManager : BaseNode
     {
-        private static readonly ILog _logger =
-            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
         private int serverPort;
         private string serverIp;
         private ICommunicationModule communicationModule;
         public TSP tsp;
         public ulong NodeId { get; set; }
+        [DefaultValue(1000)]
         public TimeSpan Timeout { get; set; }
-        private Socket socket;
+        public int NumberOfThreads { get; set; }
 
         private Thread statusThread;
         private Thread processingThread;
         private CancellationTokenSource statusThreadCancellationTokenSource;
         private CancellationTokenSource processingThreadCancellationToken;
         private DateTime startTime;
-        private TaskSolverDVRP taskSolver;
         private StatusThreadState state;
         private ConcurrentQueue<DivideProblemMessage> divideProblemMessageQueue;
 
         public TaskManager(string serverIp, int serverPort, int receiveDataTimeout)
         {
             communicationModule = new CommunicationModule(serverIp, serverPort, receiveDataTimeout);
+            startTime = DateTime.Now;
         }
 
         public void Start()
@@ -55,24 +55,25 @@ namespace Task_Manager
         {
             var registerMessage = new RegisterMessage()
             {
-                ParallelThreads = 8,//???
+                ParallelThreads = 1,//???
                 SolvableProblems = new string[] { "DVRP" },
                 Type = RegisterType.TaskManager
             };
             var messageString = SerializeMessage(registerMessage);
-            //var messageBytes = CommunicationModule.ConvertStringToData(messageString);
 
-            socket = communicationModule.SetupClient();
+            var socket = communicationModule.SetupClient();
             communicationModule.Connect(socket);
             communicationModule.SendData(messageString, socket);
 
             var response = communicationModule.ReceiveData(socket);
-            _logger.Info("Response: " + response.ToString());
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
+
             this.NodeId = deserializedResponse.Id;
             this.Timeout = deserializedResponse.TimeoutTimeSpan;
-            _logger.Info("Response has been deserialized");
-            //communicationModule.Disconnect();
+
+            communicationModule.CloseSocket(socket);
+            _logger.Info("Succesfully registered at server. Assigned id: " + this.NodeId + " received timeout: " +
+                         deserializedResponse.Timeout);
         }
 
         private void StartStatusThread()
@@ -86,65 +87,73 @@ namespace Task_Manager
         {
             processingThreadCancellationToken = new CancellationTokenSource();
             processingThread = new Thread(ProcessingThread);
-            processingThread.Start();
+            //processingThread.Start();
         }
 
         private void ProcessingThread()
         {
             while (!processingThreadCancellationToken.IsCancellationRequested)
             {
-
-                ProcessProblemDivision();
-                Thread.Sleep(Timeout);
+                
             }
         }
 
-        private void ProcessProblemDivision()
-        {
-            DivideProblemMessage divideProblemMessage = null;
-            if (!divideProblemMessageQueue.TryDequeue(out divideProblemMessage))
-                return;
-        }
-
-
         public void SendStatusThread()
         {
-            socket = communicationModule.SetupClient();
             while (!statusThreadCancellationTokenSource.IsCancellationRequested)
             {
-                //send status
-                StatusMessage statusMessage = new StatusMessage();
-                statusMessage.Id = this.NodeId;
-                var st= new StatusThread() { HowLong = (ulong)(DateTime.Now-startTime).TotalMilliseconds, TaskId =1 , State = state, ProblemType = taskSolver.Name, ProblemInstanceId = 1, TaskIdSpecified = true };
-                statusMessage.Threads = new StatusThread[] { st };
+                var socket = communicationModule.SetupClient();
+                communicationModule.Connect(socket);
+
+                var st= new StatusThread()
+                {
+                    HowLong = (ulong)(DateTime.Now-startTime).TotalMilliseconds, 
+                    TaskId = 1,
+                    State = StatusThreadState.Idle, 
+                    ProblemType = "DVRP", 
+                    ProblemInstanceId = 1, 
+                    TaskIdSpecified = true
+                };
+                var statusMessage = new StatusMessage(this.NodeId, new StatusThread[] { st });
                 var statusMessageString = SerializeMessage(statusMessage);
                 communicationModule.SendData(statusMessageString, socket);
 
                 var receivedMessage = communicationModule.ReceiveData(socket);
-
+                
                 communicationModule.CloseSocket(socket);
-
+                
                 ProcessMessage(receivedMessage);
 
-                Thread.Sleep(Timeout);
+                Thread.Sleep(this.Timeout);
             }
         }
 
-        private void ProcessMessage(string message)
+        private string ProcessMessage(string message)
         {
             var messageName = this.GetMessageName(message);
-            
+            //_logger.Debug("Received " + messageName);
+            //_logger.Debug("XML Data: " + message);
             switch (messageName)
             {
+                case "RegisterResponse":
+                    return this.ProcessCaseRegisterResponse(message);
+
                 case "DivideProblem":
-                    this.ProcessCaseDivideProblem(message);
-                    break;
+                    return this.ProcessCaseDivideProblem(message);
+
                 case "PartialProblems":
-                    this.ProcessCasePartialProblems(message);
-                    break;
+                    return this.ProcessCasePartialProblems(message);
                 default:
                     break;
             }
+            return String.Empty;
+        }
+
+        private string ProcessCaseRegisterResponse(string message)
+        {
+            var deserializedMessage = DeserializeMessage<SolutionsMessage>(message);
+
+            return string.Empty;
         }
 
         private string ProcessCaseDivideProblem(string message)
@@ -171,20 +180,20 @@ namespace Task_Manager
             }
             catch (Exception ex)
             {
-                _logger.Error("Error parsing xml document: " + message + "exception: " + ex.ToString());
+                //_logger.Error("Error parsing xml document: " + message + "exception: " + ex.ToString());
                 return String.Empty;
+
+                //TODO logowanie
             }
             XmlElement root = doc.DocumentElement;
             return root.Name;
         }
 
-        public void StopTM()
+        public void Stop()
         {
-            processingThreadCancellationToken.Cancel();
             statusThreadCancellationTokenSource.Cancel();
-            statusThread.Join((int)Timeout.TotalMilliseconds * 10);
-            processingThread.Join((int)Timeout.TotalMilliseconds * 10);
-            _logger.Info("TaskManager stopped");
+            statusThread.Join();
+            //_logger.Info("Stopped listening");
         }
 
         public void Disconnect()
