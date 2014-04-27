@@ -70,7 +70,7 @@ namespace DynamicVehicleRoutingProblem
             return result;
         }
 
-        public static string ClientsToString(Client[][][] subsets)
+        public static string ClientsToString(int[][][] subsets)
         {
             string result ="";
             for (int i = 0; i <=0; i++)

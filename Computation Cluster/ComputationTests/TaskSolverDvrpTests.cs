@@ -14,12 +14,13 @@ namespace ComputationTests
     {
         [DeploymentItem(@"DVRPTestData\okul12D.vrp", "DVRPTestData")]
         [TestMethod]
+        [Timeout(300000)]
         public void DivideProblemTest()
         {
             string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
             byte[] problemData = CommunicationModule.ConvertStringToData(testData);
             TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
-            taskSolver.DivideProblem(3);
+            taskSolver.DivideProblem(10);
         }
 
     }

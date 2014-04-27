@@ -50,6 +50,8 @@ namespace DynamicVehicleRoutingProblem
         public Client[] Clients { get; set; }
         public Location[] Locations { get; set;}
 
+        public int[] ClientID { get; set; } // pomocnicz tablica wykorzystywana do Divide
+
         public DVRP()
         {
             // Use the DefaultValue propety of each property to actually set it, via reflection.
@@ -146,6 +148,7 @@ namespace DynamicVehicleRoutingProblem
                     case "NUM_VISITS":
                         instance.NumVistis = int.Parse(split[1]);
                         instance.Clients = new Client[instance.NumVistis];
+                        instance.ClientID = new int[instance.NumVistis];
                         break;
                     case "NUM_LOCATIONS":
                         instance.NumLocations = int.Parse(split[1]);
@@ -173,6 +176,7 @@ namespace DynamicVehicleRoutingProblem
                             string[] clientsSplit = DVRP.SplitText(lines[++i]);
                             instance.Clients[j].visitID = int.Parse(clientsSplit[0]);
                             instance.Clients[j].size = int.Parse(clientsSplit[1]);
+                            instance.ClientID[j] = int.Parse(clientsSplit[0]);
                         }
                         break;
                     case "LOCATION_COORD_SECTION":

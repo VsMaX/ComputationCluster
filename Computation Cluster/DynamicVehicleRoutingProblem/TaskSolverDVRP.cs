@@ -22,23 +22,25 @@ namespace DynamicVehicleRoutingProblem
 
         public override byte[][] DivideProblem(int threadCount)
         {
-            var subsets = TaskSolverDVRP.GetAllPartitions<Client>(Dvrp.Clients);
-            Trace.WriteLine("Number of all posible subsets "+subsets.Count().ToString());
+            var subsets = TaskSolverDVRP.GetAllPartitions<int>(Dvrp.ClientID);
+            Trace.WriteLine(subsets.Count().ToString());
 
             int size = subsets.Count() / threadCount;
-            Trace.WriteLine("Number of sunsets for one node "+size.ToString());
+            Trace.WriteLine(size.ToString());
 
             for (int i = 1; i <= 1; i++) //threadCount
-            { 
-                Client[][][] tab= new Client[size][][];
+            {
+                Trace.WriteLine("i = " + i.ToString());
+                int[][][] tab = new int[size][][];
                 if (i == threadCount) // ostatni podzial
                 {
-                    tab = new Client[subsets.Count() - size * i][][];
+                    tab = new int[subsets.Count() - size * i][][];
                     size = tab.Count();
                 }
-                for(int j = (i-1)*size; j< i*size; j++)
+                for (int j = (i - 1) * size; j < i * size; j++)
                     for (int k = 0; k < subsets.ElementAt(j).Count(); k++)
                     {
+                        Trace.WriteLine("j = " + j.ToString() + "  k = " + k.ToString());
                         tab[k] = subsets.ElementAt(j);
                     }
 
