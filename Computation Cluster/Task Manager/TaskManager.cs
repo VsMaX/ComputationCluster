@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -17,34 +16,34 @@ using System.Collections.Concurrent;
 
 namespace Task_Manager
 {
-    [MethodBoundary]
     public class TaskManager : BaseNode
     {
+        private static readonly ILog _logger =
+            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         private int serverPort;
         private string serverIp;
         private ICommunicationModule communicationModule;
         public TSP tsp;
         public ulong NodeId { get; set; }
-        [DefaultValue(1000)]
         public TimeSpan Timeout { get; set; }
-        public int NumberOfThreads { get; set; }
+        private Socket socket;
 
         private Thread statusThread;
         private Thread processingThread;
         private CancellationTokenSource statusThreadCancellationTokenSource;
         private CancellationTokenSource processingThreadCancellationToken;
         private DateTime startTime;
-        private TaskSolver<DVRP> taskSolver;
+        private TaskSolverDVRP taskSolver;
         private StatusThreadState state;
         private ConcurrentQueue<DivideProblemMessage> divideProblemMessageQueue;
 
-        public TaskManager(string serverIp, int serverPort, int receiveDataTimeout)
+        public TaskManager(string serverIp, int serverPort)
         {
-            communicationModule = new CommunicationModule(serverIp, serverPort, receiveDataTimeout);
-            startTime = DateTime.Now;
+            communicationModule = new CommunicationModule(serverIp, serverPort, 5000);
         }
 
-        public void Start()
+        public void StartTM()
         {
             RegisterAtServer();
             StartStatusThread();
@@ -56,25 +55,24 @@ namespace Task_Manager
         {
             var registerMessage = new RegisterMessage()
             {
-                ParallelThreads = 1,//???
+                ParallelThreads = 8,//???
                 SolvableProblems = new string[] { "DVRP" },
                 Type = RegisterType.TaskManager
             };
             var messageString = SerializeMessage(registerMessage);
+            //var messageBytes = CommunicationModule.ConvertStringToData(messageString);
 
-            var socket = communicationModule.SetupClient();
+            socket = communicationModule.SetupClient();
             communicationModule.Connect(socket);
             communicationModule.SendData(messageString, socket);
 
             var response = communicationModule.ReceiveData(socket);
+            _logger.Info("Response: " + response.ToString());
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
-
             this.NodeId = deserializedResponse.Id;
             this.Timeout = deserializedResponse.TimeoutTimeSpan;
-
-            communicationModule.CloseSocket(socket);
-            _logger.Info("Succesfully registered at server. Assigned id: " + this.NodeId + " received timeout: " +
-                         deserializedResponse.Timeout);
+            _logger.Info("Response has been deserialized");
+            //communicationModule.Disconnect();
         }
 
         private void StartStatusThread()
@@ -88,43 +86,58 @@ namespace Task_Manager
         {
             processingThreadCancellationToken = new CancellationTokenSource();
             processingThread = new Thread(ProcessingThread);
-            //processingThread.Start();
+            processingThread.Start();
         }
 
         private void ProcessingThread()
         {
             while (!processingThreadCancellationToken.IsCancellationRequested)
             {
-                
+                if (divideProblemMessageQueue.Count == 0)
+                    state = StatusThreadState.Idle;
+                else
+                {
+                    state = StatusThreadState.Busy;
+                    DivideProblemMessage dpm;
+                    divideProblemMessageQueue.TryDequeue(out dpm);
+                    taskSolver = new TaskSolverDVRP(dpm.Data);
+                    taskSolver.DivideProblem((int)dpm.ComputationalNodes);
+                }
+                //lock (ActiveNodes)
+                //{
+                //    ActiveNodes.RemoveAll(HasNodeExpired);
+                //}
+                Thread.Sleep(1000);
             }
         }
 
+        //private bool HasNodeExpired(NodeEntry x)
+        //{
+        //    return (DateTime.Now - x.LastStatusSentTime) > DefaultTimeout;
+        //}
+
         public void SendStatusThread()
         {
+            socket = communicationModule.SetupClient();
             while (!statusThreadCancellationTokenSource.IsCancellationRequested)
             {
-                var socket = communicationModule.SetupClient();
-                communicationModule.Connect(socket);
-
-                var st= new StatusThread()
-                {
-                    HowLong = (ulong)(DateTime.Now-startTime).TotalMilliseconds, 
-                    TaskId = 1,
-                    State = StatusThreadState.Idle, 
-                    ProblemType = "DVRP", 
-                    ProblemInstanceId = 1, 
-                    TaskIdSpecified = true
-                };
-                var statusMessage = new StatusMessage(this.NodeId, new StatusThread[] { st });
+                //send status
+                StatusMessage statusMessage = new StatusMessage();
+                statusMessage.Id = this.NodeId;
+                var st= new StatusThread() { HowLong = (ulong)(DateTime.Now-startTime).TotalMilliseconds, TaskId =1 , State = state, ProblemType = taskSolver.Name, ProblemInstanceId = 1, TaskIdSpecified = true };
+                statusMessage.Threads = new StatusThread[] { st };
                 var statusMessageString = SerializeMessage(statusMessage);
                 communicationModule.SendData(statusMessageString, socket);
 
                 var receivedMessage = communicationModule.ReceiveData(socket);
-                
-                communicationModule.CloseSocket(socket);
-                
-                ProcessMessage(receivedMessage);
+                string result = String.Empty;
+                if (!String.IsNullOrEmpty(receivedMessage))
+                    result = ProcessMessage(receivedMessage);
 
+                if (!String.IsNullOrEmpty(result))
+                    communicationModule.SendData(result, socket);
+
+                communicationModule.CloseSocket(socket);
                 Thread.Sleep(this.Timeout);
             }
         }
@@ -190,7 +203,7 @@ namespace Task_Manager
             return root.Name;
         }
 
-        public void Stop()
+        public void StopTM()
         {
             statusThreadCancellationTokenSource.Cancel();
             statusThread.Join();

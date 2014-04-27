@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using UCCTaskSolver;
 
 namespace DynamicVehicleRoutingProblem
 {
@@ -234,7 +235,6 @@ namespace DynamicVehicleRoutingProblem
 
             return instance;
         }
-
     }
 
     public enum ProblemType
