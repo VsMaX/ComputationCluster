@@ -38,12 +38,12 @@ namespace Task_Manager
         private StatusThreadState state;
         private ConcurrentQueue<DivideProblemMessage> divideProblemMessageQueue;
 
-        public TaskManager(string serverIp, int serverPort)
+        public TaskManager(string serverIp, int serverPort, int receiveDataTimeout)
         {
-            communicationModule = new CommunicationModule(serverIp, serverPort, 5000);
+            communicationModule = new CommunicationModule(serverIp, serverPort, receiveDataTimeout);
         }
 
-        public void StartTM()
+        public void Start()
         {
             RegisterAtServer();
             StartStatusThread();

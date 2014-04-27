@@ -14,7 +14,7 @@ namespace ComputationTests
     {
         [DeploymentItem(@"DVRPTestData\okul12D.vrp", "DVRPTestData")]
         [TestMethod]
-        [Timeout(40000)]
+        [Timeout(60000)]
         public void DivideProblemTest()
         {
             string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
@@ -22,6 +22,5 @@ namespace ComputationTests
             TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
             taskSolver.DivideProblem(10);
         }
-
     }
 }
