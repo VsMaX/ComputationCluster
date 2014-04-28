@@ -94,7 +94,9 @@ namespace Task_Manager
         {
             while (!processingThreadCancellationToken.IsCancellationRequested)
             {
-                
+
+                //TODO get divideProblemMessage from queue and divide the problem
+                //TODO then open connection to server and send divided problem
             }
         }
 
@@ -169,24 +171,6 @@ namespace Task_Manager
             var deserializedMessage = DeserializeMessage<PartialProblemsMessage>(message);
 
             return string.Empty;
-        }
-
-        private string GetMessageName(string message)
-        {
-            var doc = new XmlDocument();
-            try
-            {
-                doc.LoadXml(message);
-            }
-            catch (Exception ex)
-            {
-                //_logger.Error("Error parsing xml document: " + message + "exception: " + ex.ToString());
-                return String.Empty;
-
-                //TODO logowanie
-            }
-            XmlElement root = doc.DocumentElement;
-            return root.Name;
         }
 
         public void Stop()
