@@ -119,12 +119,12 @@ namespace Task_Manager
                 var statusMessage = new StatusMessage(this.NodeId, new StatusThread[] { st });
                 var statusMessageString = SerializeMessage(statusMessage);
                 communicationModule.SendData(statusMessageString, socket);
-
                 var receivedMessage = communicationModule.ReceiveData(socket);
                 
                 communicationModule.CloseSocket(socket);
-                
-                ProcessMessage(receivedMessage);
+
+                if(!String.IsNullOrEmpty(receivedMessage))
+                    ProcessMessage(receivedMessage);
 
                 Thread.Sleep(this.Timeout);
             }
@@ -137,9 +137,6 @@ namespace Task_Manager
             //_logger.Debug("XML Data: " + message);
             switch (messageName)
             {
-                case "RegisterResponse":
-                    return this.ProcessCaseRegisterResponse(message);
-
                 case "DivideProblem":
                     return this.ProcessCaseDivideProblem(message);
 
@@ -149,13 +146,6 @@ namespace Task_Manager
                     break;
             }
             return String.Empty;
-        }
-
-        private string ProcessCaseRegisterResponse(string message)
-        {
-            var deserializedMessage = DeserializeMessage<SolutionsMessage>(message);
-
-            return string.Empty;
         }
 
         private string ProcessCaseDivideProblem(string message)
