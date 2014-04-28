@@ -140,7 +140,7 @@ namespace DynamicVehicleRoutingProblem
         }
     }
 
-    private class Backtracking
+    class Backtracking
     {
         public double ca;
         private byte[] partialData;
