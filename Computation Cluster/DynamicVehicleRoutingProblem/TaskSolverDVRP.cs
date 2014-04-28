@@ -201,7 +201,6 @@ namespace DynamicVehicleRoutingProblem
                 kk--;
                 act_cycle.Remove(result.Locations[result.Depots[0].locationID]);
                 return;
-
             }
             if (k == kk)
             {
@@ -229,7 +228,6 @@ namespace DynamicVehicleRoutingProblem
                     used[i] = false;
                     capacity -= result.Clients[i].size;
                     act_cycle.Remove(result.Locations[result.Clients[clientsId[i]].locationID]);
-
                 }
             }
         }

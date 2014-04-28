@@ -40,5 +40,11 @@ namespace ComputationTests
         {
             StopServer();
         }
+
+        [TestMethod]
+        public void IntTest()
+        {
+
+        }
     }
 }

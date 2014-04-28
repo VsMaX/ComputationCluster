@@ -81,20 +81,13 @@ namespace ComputationTests
         [DeploymentItem(@"DVRPTestData\okul12D.vrp", "DVRPTestData")]
         [DeploymentItem(@"DVRPTestData\AllTxtFiles.txt", "DVRPTestData")]
         [TestMethod]
-        [Timeout(240000)]
+        [Timeout(120000)]
         public void SolveProblemTest()
         {
-            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
-            byte[] problemData = CommunicationModule.ConvertStringToData(testData);
-            TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
-            byte[][] result = taskSolver.DivideProblem(10);
-            for (int i = 0; i <=0; i++)
-            {
-                int[][][] partialData = DVRP.ParseData(result[i]);
-                taskSolver.Solve(result[i], new TimeSpan());
-            }
-
-
+            var testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
+            DVRP result = DVRP.Parse(testData);
+ 
         }
+
     }
 }

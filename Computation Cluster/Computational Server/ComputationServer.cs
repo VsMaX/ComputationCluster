@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,34 +28,27 @@ namespace Computational_Server
         private ConcurrentDictionary<ulong, SolveRequestMessage> solveRequests;
         private ConcurrentDictionary<ulong, NodeEntry> activeNodes;
         private ConcurrentBag<SolutionsMessage> partialSolutions;
+        private List<PartialProblemsMessage> partialProblems; 
         private ICommunicationModule communicationModule;
         public readonly int processingThreadSleepTime;
         public readonly TimeSpan DefaultTimeout;
-        [DefaultValue(1)]
         private ulong nodesId;
         private object nodesIdLock = new object();
         private Socket serverSocket;
-        [DefaultValue(1)]
         private ulong solutionId;
-        private object solutionIdLock;
+        private object solutionIdLock = new object();
 
         public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule, int processingThreadSleepTime)
         {
-            foreach (PropertyDescriptor prop in TypeDescriptor.GetProperties(this))
-            {
-                DefaultValueAttribute attr = (DefaultValueAttribute)prop.Attributes[typeof(DefaultValueAttribute)];
-                if (attr != null)
-                {
-                    prop.SetValue(this, attr.Value);
-                }
-            }
             solveRequests = new ConcurrentDictionary<ulong, SolveRequestMessage>();
             activeNodes = new ConcurrentDictionary<ulong, NodeEntry>();
             partialSolutions = new ConcurrentBag<SolutionsMessage>();
             DefaultTimeout = nodeTimeout;
-            nodesId = 0;
+            nodesId = 1;
+            solutionId = 1;
             this.communicationModule = communicationModule;
             this.processingThreadSleepTime = processingThreadSleepTime;
+            partialProblems = new List<PartialProblemsMessage>();
         }
 
         public void StartServer()
@@ -81,18 +75,23 @@ namespace Computational_Server
         {
             while (!processingThreadCancellationToken.IsCancellationRequested)
             {
-                lock (activeNodes)
-                {
-                    var nodesToDelete = activeNodes.Where(x => HasNodeExpired(x.Value)).ToList();
-                    for (int i = 0; i < nodesToDelete.Count; i++)
-                    {
-                        var nodeToDelete = nodesToDelete[i];
-                        NodeEntry deletedNode = null;
-                        if(!activeNodes.TryRemove(nodeToDelete.Key, out deletedNode))
-                            _logger.Error("Could not remove node from activeNodes list. NodeId: " + nodeToDelete.Key);
-                    }
-                }
+                RemoveUnusedNodes();
                 Thread.Sleep(processingThreadSleepTime);
+            }
+        }
+
+        private void RemoveUnusedNodes()
+        {
+            lock (activeNodes)
+            {
+                var nodesToDelete = activeNodes.Where(x => HasNodeExpired(x.Value)).ToList();
+                for (int i = 0; i < nodesToDelete.Count; i++)
+                {
+                    var nodeToDelete = nodesToDelete[i];
+                    NodeEntry deletedNode = null;
+                    if (!activeNodes.TryRemove(nodeToDelete.Key, out deletedNode))
+                        _logger.Error("Could not remove node from activeNodes list. NodeId: " + nodeToDelete.Key);
+                }
             }
         }
 
@@ -146,8 +145,6 @@ namespace Computational_Server
                 case "Solutions":
                     return this.ProcessCaseSolutions(message);
 
-                case "PartialProblems":
-                    return this.ProcessCasePartialProblems(message);
                 default:
                     break;
             }
@@ -182,8 +179,8 @@ namespace Computational_Server
             ulong newNodeId = 0;
             lock (nodesIdLock)
             {
-                this.nodesId++;
                 newNodeId = nodesId;
+                this.nodesId++;
             }
             return newNodeId;
         }
@@ -218,28 +215,39 @@ namespace Computational_Server
         private string ProcessCaseSolvePartialProblems(string message)
         {
             var deserializedMessage = DeserializeMessage<PartialProblemsMessage>(message);
-
-            //TO DO Oczekiwanie na wlasciwe CN i przeslanie do nich podproblemow
+            lock (partialProblems)
+            {
+                partialProblems.Add(deserializedMessage);
+            }
+            //TODO sprawdzic czy wiadomosc zostala odebrana przez CN czy Tm
+            //TODO jesli przez CN to wyslij do TMa
+            //TODO jesli przez TM to wyslac podzielone czesci do CNow
 
             return string.Empty;
         }
 
         private string ProcessCaseStatus(string message)
         {
-            string result = String.Empty;
             var deserializedStatusMessage = DeserializeMessage<StatusMessage>(message);
             _logger.Info("Received status from nodeId: " + deserializedStatusMessage.Id);
+            
+            //TODO update nodes lifetime
             UpdateNodesLifetime(deserializedStatusMessage);
 
-            //TODO update nodes lifetime
+            var node = GetActiveNode(deserializedStatusMessage.Id);
+            if (node == null)
+                return String.Empty;
             //TODO if status comes from TM, get all SolveRequests and send Divide to TM
             //TODO if status comes from CN, send all problems divided for this node
-
-            var node = GetActiveNode(deserializedStatusMessage.Id);
-
             var nodeTask = GetTaskForNode(node);
+            if (nodeTask == null)
+                return String.Empty;
 
-            return SerializeMessage(nodeTask);
+            var declaringType = nodeTask.GetType();
+            MethodInfo method = typeof(ComputationServer).GetMethod("SerializeMessage");
+            MethodInfo generic = method.MakeGenericMethod(declaringType);
+
+            return (string)generic.Invoke(this, new object[] { nodeTask });
         }
 
         private ComputationMessage GetTaskForNode(NodeEntry node)
@@ -249,16 +257,26 @@ namespace Computational_Server
                 case RegisterType.TaskManager:
                     return GetTaskForTaskManager(node);
                 case RegisterType.ComputationalNode:
-                    return null;
+                    return GetTaskForComputationalNode(node);
                 default:
                     _logger.Error("GetTaskForNode error: Unknown node type");
                     return null;
             }
         }
 
+        private ComputationMessage GetTaskForComputationalNode(NodeEntry node)
+        {
+            PartialProblemsMessage partialProblem = null;
+            lock (partialProblems)
+            {
+                partialProblem = partialProblems.FirstOrDefault(x => node.SolvingProblems.Contains(x.ProblemType));
+            }
+            return partialProblem;
+        }
+
         private ComputationMessage GetTaskForTaskManager(NodeEntry node)
         {
-            var divideMessage = GetDivideProblemMessageForType(node.Type);
+            var divideMessage = GetDivideProblemMessageForType(node.SolvingProblems);
             if (divideMessage != null)
                 return divideMessage;
             var partialSolutionsMessage = GetPartialSolutionForType(node.Type);
@@ -278,20 +296,26 @@ namespace Computational_Server
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        private DivideProblemMessage GetDivideProblemMessageForType(RegisterType type)
+        private DivideProblemMessage GetDivideProblemMessageForType(List<string> solvingTypes)
         {
             DivideProblemMessage divideProblemMessage = null;
-            var solveRequest = solveRequests.FirstOrDefault(x => x.Value.ProblemType == type.ToString());
+            KeyValuePair<ulong, SolveRequestMessage> solveRequest = new KeyValuePair<ulong,SolveRequestMessage>();
+            lock(solveRequests)
+            {
+                solveRequest = solveRequests.FirstOrDefault(x => solvingTypes.Contains(x.Value.ProblemType));
+            }
+
             if (solveRequest.Value != null)
             {
                 divideProblemMessage = new DivideProblemMessage()
                 {
-                    ComputationalNodes = (ulong) activeNodes.Count,
-                    Data = new byte[0],
-                    ProblemType = type.ToString(),
+                    ComputationalNodes = (ulong)activeNodes.Count,
+                    Data = solveRequest.Value.Data,
+                    ProblemType = solveRequest.Value.ProblemType,
                     Id = solveRequest.Key
                 };
             }
+            
             return divideProblemMessage;
         }
 
@@ -328,24 +352,9 @@ namespace Computational_Server
         {
             throw new NotImplementedException();
             var deserializedSolutionRequestMessage = DeserializeMessage<SolutionRequestMessage>(message);
-            //solveRequestMessageQueue.Enqueue(deserializedSolutionRequestMessage);
-            Solution s = new Solution()
-            {
-                ComputationsTime = 100,
-                Data = new byte[] { 0, 0, 10 },
-                TaskId = 23,
-                TaskIdSpecified = true,
-                TimeoutOccured = true,
-                Type = SolutionType.Final
-            };
-            var solveSolutions = new SolutionsMessage()
-            {
-                Id = 1,
-                ProblemType = "TSP",
-                CommonData = new byte[] { 0, 0, 22 },
-                Solutions = new Solution[] { s }
-            };
-            return SerializeMessage<SolutionsMessage>(solveSolutions);
+
+
+            return SerializeMessage<SolutionsMessage>(null);
         }
 
         private string ProcessCaseSolveRequest(string message)
@@ -354,7 +363,7 @@ namespace Computational_Server
             
             ulong solutionId = GenerateNewSolutionId();
 
-            SolveRequestResponseMessage solveRequestResponse = new SolveRequestResponseMessage() { Id = solutionId };
+            var solveRequestResponse = new SolveRequestResponseMessage() { Id = solutionId };
 
             if (!solveRequests.TryAdd(solutionId, deserializedMessage))
             {
