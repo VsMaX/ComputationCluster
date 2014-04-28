@@ -215,7 +215,7 @@ namespace DynamicVehicleRoutingProblem
                             string[] clientsSplit = DVRP.SplitText(lines[++i]);
                             instance.Clients[j].visitID = int.Parse(clientsSplit[0]);
                             instance.Clients[j].size = int.Parse(clientsSplit[1]);
-                            instance.ClientID[j] = int.Parse(clientsSplit[0]);
+                            instance.ClientID[j] = j;//int.Parse(clientsSplit[0]);
                         }
                         break;
                     case "LOCATION_COORD_SECTION":

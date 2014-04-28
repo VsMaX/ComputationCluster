@@ -78,12 +78,33 @@ namespace DynamicVehicleRoutingProblem
 
         public override byte[] Solve(byte[] partialData, TimeSpan timeout)
         {
+            int[][][] partial = DVRP.ParseData(partialData);
+            double droga = Double.MaxValue;
+            List<Location>[] rozwiazanie = new List<Location>[0];
+            List<Location>[] bestSol = new List<Location>[0];
+            for (int set = 0; set < partial.Length; set++)
+            {
+                double setLength = 0;
+                rozwiazanie = new List<Location>[partial[set].Length];
+                for (int path = 0; path < partial[set].Length; path++)
+                {
+                    var tsp = new Backtracking(partial[set][path], this.Dvrp);
+                    //result.Clients = tsp.Sortuj(result.Clients)[0];
 
-            var tsp = new Backtracking(partialData, this.Dvrp);
-            //result.Clients = tsp.Sortuj(result.Clients)[0];
-
-            tsp.FindCycle(0, 0, 0, this.Dvrp.Capacities, 0);
-            List<Location> rozwiazanie = tsp.best_cycle;
+                    tsp.FindCycle(0, 0, 0, 0,0);//this.Dvrp.Capacities);
+                    if(tsp.best_cycle != null)
+                        rozwiazanie[path]= new List<Location>(tsp.best_cycle);
+                    setLength += tsp.best;
+                }
+                if (setLength < droga)
+                {
+                    droga = setLength;
+                    bestSol = new List<Location>[rozwiazanie.Length];
+                    for (int i = 0; i < rozwiazanie.Length; i++)
+                        bestSol[i] = new List<Location>(rozwiazanie[i]);
+                }
+            }
+            Trace.WriteLine(droga.ToString());
             return partialData;
         }
   
@@ -140,62 +161,75 @@ namespace DynamicVehicleRoutingProblem
         }
     }
 
-    private class Backtracking
+    public class Backtracking
     {
         public double ca;
-        private byte[] partialData;
+        public int[] clientsId; // INDEKSY TABLICOWE
+        //private byte[] partialData;
         public List<Location> act_cycle;
         public List<Location> best_cycle = null;
         public bool[] used;
-        public double? best = null;
+        public double best = Double.MaxValue;
         public DVRP result;
         public int ilosc_sciezek;
-        public int kk = 12;
+        public int kk;
 
-        public Backtracking(byte[] partialData, DVRP result)
+        public Backtracking(int[] partialData, DVRP result)
         {
             act_cycle = new List<Location>();
             //act_cycle.Add(result.Locations[result.Depots[0].locationID]);
 
-            this.partialData = partialData;
+            this.clientsId = partialData;
             this.result = result;
-            used = new bool[result.Clients.Length];
+            used = new bool[partialData.Length];
             ca = result.Capacities;
+            kk = partialData.Length;
         }
 
-        public void FindCycle(int v, int k, double d, double capacity, double poprzednie)
+        public void FindCycle(int v, int k, double d,double time, double capacity)
         {
-            if (d >= best || capacity < 0) { capacity -= poprzednie; return; }
+            if (d >= best || capacity < 0 || time>result.Depots[0].end) { return; }
             if (capacity == 0)
             {
                 capacity = result.Capacities;
                 act_cycle.Add(result.Locations[result.Depots[0].locationID]);
                 kk++;
                 double dist = result.distances[v, result.Locations[result.Depots[0].locationID].locationID];
-                //FindCycle(result.Locations[result.Depots[0].locationID].locationID, k + 1, d + dist, capacity);
+                double t = dist / result.Speed; 
+                FindCycle(0, k + 1, d + dist, time+t,capacity);
+                capacity -= 100;
+                kk--;
+                act_cycle.Remove(result.Locations[result.Depots[0].locationID]);
+                return;
+
             }
             if (k == kk)
             {
                 best = d;
-                best_cycle = act_cycle;
+                best_cycle = new List<Location>(act_cycle);
                 ilosc_sciezek++;
                 return;
             }
 
-            for (int i = 0; i < result.Locations.Length - 1; i++)
+            for (int i = 0; i < clientsId.Length; i++)
             {
-                if (!used[result.Locations[i].locationID])
+                if (!used[i])
                 {
-                    used[result.Locations[i].locationID] = true;
-                    if (act_cycle.Count > k)
-                        act_cycle[k] = result.Locations[i];
-                    else
-                        act_cycle.Add(result.Locations[i]);
-                    double distance = result.distances[i, i + 1];
-                    poprzednie = result.Clients[i].size;
-                    capacity += poprzednie;
-                    FindCycle(result.Locations[i].locationID, k + 1, d + distance, capacity, poprzednie);
-                    used[result.Locations[i].locationID] = false;
+                    used[i] = true;
+
+                    //if (act_cycle.Count > k)
+                    //    act_cycle[k] = result.Locations[result.Clients[clientsId[i]].locationID];
+                    //else
+                        act_cycle.Add(result.Locations[result.Clients[clientsId[i]].locationID]);
+
+                    double dist = result.distances[v, result.Locations[result.Clients[clientsId[i]].locationID].locationID];
+                    double t = dist / result.Speed +result.Clients[clientsId[i]].unld; 
+                    capacity += result.Clients[i].size;
+                    FindCycle(result.Locations[result.Clients[clientsId[i]].locationID].locationID, k + 1, d + dist,time+t, capacity);
+                    used[i] = false;
+                    capacity -= result.Clients[i].size;
+                    act_cycle.Remove(result.Locations[result.Clients[clientsId[i]].locationID]);
+
                 }
             }
         }
