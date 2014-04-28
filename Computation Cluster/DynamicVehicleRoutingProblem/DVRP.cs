@@ -51,6 +51,7 @@ namespace DynamicVehicleRoutingProblem
         public Location[] Locations { get; set;}
 
         public int[] ClientID { get; set; } // pomocnicz tablica wykorzystywana do Divide
+        public double[,] distances { get; set; }
 
         public DVRP()
         {
@@ -114,6 +115,44 @@ namespace DynamicVehicleRoutingProblem
                     splitList.Add(result);
             }
             return splitList.ToArray();
+        }
+
+        public static int[][][] ParseData(byte[] data)
+        {
+            int[][][] result = new int[0][][];
+            string text = Communication_Library.CommunicationModule.ConvertDataToString(data, data.Length);
+            string[] lines = text.Split(new[] {'\n'});
+
+            int set = 0;
+            int path = 0;
+            for (int i = 0; i < lines.Length-1; i++)
+            {
+                string[] split = DVRP.SplitText(lines[i]);
+
+                switch (split[0])
+                {
+                    case "NUMSETS":
+                        result = new int[int.Parse(split[1])][][];
+                        break;
+                    case "SET":
+                        result[set] = new int[int.Parse(split[1])][];
+                        set++;
+                        path = 0;
+                        break;
+                    case "PATH":
+                        result[set - 1][path] = new int[int.Parse(split[1])];
+                        path++;
+                        break;
+                    default:
+                        for (int j = 0; j < split.Length; j++)
+                        {
+                            result[set - 1][path - 1][j] = int.Parse(split[j]); 
+                        }
+                        break;
+                }
+
+            }
+            return result;
         }
 
         public static DVRP Parse(string input)
@@ -237,8 +276,22 @@ namespace DynamicVehicleRoutingProblem
                 }
             }
 
+            instance.distances = new double[instance.Locations.Length, instance.Locations.Length];
+
+            for (int j = 0; j < instance.Locations.Length; j++)
+            {
+                for (int k = 0; k < instance.Locations.Length; k++)
+                {
+                    double x = instance.Locations[instance.Locations[j].locationID].x - instance.Locations[instance.Locations[k].locationID].x;
+                    double y = instance.Locations[instance.Locations[j].locationID].y - instance.Locations[instance.Locations[k].locationID].y;
+                    instance.distances[j, k] = Math.Sqrt(x * x + y * y);
+                }
+            }
+
             return instance;
         }
+
+
     }
 
     public enum ProblemType

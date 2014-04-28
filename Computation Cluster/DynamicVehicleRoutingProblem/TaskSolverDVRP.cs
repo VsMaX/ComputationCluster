@@ -22,33 +22,39 @@ namespace DynamicVehicleRoutingProblem
 
         public override byte[][] DivideProblem(int threadCount)
         {
-            var subsets = TaskSolverDVRP.GetAllPartitions<int>(Dvrp.ClientID);
+            var result = new byte[threadCount][];
+
+            var subsets = TaskSolverDVRP.GetAllPartitions<int>(Dvrp.ClientID).ToArray();
             Trace.WriteLine(subsets.Count().ToString());
 
             int size = subsets.Count() / threadCount;
             Trace.WriteLine(size.ToString());
 
-            for (int i = 1; i <= 1; i++) //threadCount
+            for (int i = 1; i <= threadCount; i++) //threadCount
             {
-                Trace.WriteLine("i = " + i.ToString());
+                //Trace.WriteLine("i = " + i.ToString());
                 int[][][] tab = new int[size][][];
                 if (i == threadCount) // ostatni podzial
                 {
                     tab = new int[subsets.Count() - size * i][][];
                     size = tab.Count();
                 }
-                for (int j = (i - 1) * size; j < i * size; j++)
-                    for (int k = 0; k < subsets.ElementAt(j).Count(); k++)
+                int ind =0;
+                for (int j = (i - 1) * size; j < i * size; j++, ind++)
+                {
+                    tab[ind] = new int[subsets[j].Length][];
+                    for (int k = 0; k < subsets[j].Length; k++)
                     {
-                        Trace.WriteLine("j = " + j.ToString() + "  k = " + k.ToString());
-                        tab[k] = subsets.ElementAt(j);
+                        tab[ind][k] = new int[subsets[j][k].Length];
+                        tab[ind][k] = subsets[j][k];
                     }
+                }
 
-                Trace.Write(Client.ClientsToString(tab));
+                //Trace.Write(Client.ClientsToString(tab));
+                result[i - 1] = CommunicationModule.ConvertStringToData(Client.ClientsToString(tab));
             }
 
-
-            return new byte[0][];
+            return result;
         }
 
         public override event UnhandledExceptionEventHandler ErrorOccured;
@@ -69,10 +75,18 @@ namespace DynamicVehicleRoutingProblem
 
         public override event TaskSolver.ComputationsFinishedEventHandler SolutionsMergingFinished;
 
+
         public override byte[] Solve(byte[] partialData, TimeSpan timeout)
         {
-            throw new NotImplementedException();
+
+            var tsp = new Backtracking(partialData, this.Dvrp);
+            //result.Clients = tsp.Sortuj(result.Clients)[0];
+
+            tsp.FindCycle(0, 0, 0, this.Dvrp.Capacities, 0);
+            List<Location> rozwiazanie = tsp.best_cycle;
+            return partialData;
         }
+  
 
         public static IEnumerable<T[][]> GetAllPartitions<T>(T[] elements)
         {
@@ -122,6 +136,67 @@ namespace DynamicVehicleRoutingProblem
 
                 yield return Tuple.Create(
                     resultSets[0].ToArray(), resultSets[1].ToArray());
+            }
+        }
+    }
+
+    private class Backtracking
+    {
+        public double ca;
+        private byte[] partialData;
+        public List<Location> act_cycle;
+        public List<Location> best_cycle = null;
+        public bool[] used;
+        public double? best = null;
+        public DVRP result;
+        public int ilosc_sciezek;
+        public int kk = 12;
+
+        public Backtracking(byte[] partialData, DVRP result)
+        {
+            act_cycle = new List<Location>();
+            //act_cycle.Add(result.Locations[result.Depots[0].locationID]);
+
+            this.partialData = partialData;
+            this.result = result;
+            used = new bool[result.Clients.Length];
+            ca = result.Capacities;
+        }
+
+        public void FindCycle(int v, int k, double d, double capacity, double poprzednie)
+        {
+            if (d >= best || capacity < 0) { capacity -= poprzednie; return; }
+            if (capacity == 0)
+            {
+                capacity = result.Capacities;
+                act_cycle.Add(result.Locations[result.Depots[0].locationID]);
+                kk++;
+                double dist = result.distances[v, result.Locations[result.Depots[0].locationID].locationID];
+                //FindCycle(result.Locations[result.Depots[0].locationID].locationID, k + 1, d + dist, capacity);
+            }
+            if (k == kk)
+            {
+                best = d;
+                best_cycle = act_cycle;
+                ilosc_sciezek++;
+                return;
+            }
+
+            for (int i = 0; i < result.Locations.Length - 1; i++)
+            {
+                if (!used[result.Locations[i].locationID])
+                {
+                    used[result.Locations[i].locationID] = true;
+                    if (act_cycle.Count > k)
+                        act_cycle[k] = result.Locations[i];
+                    else
+                        act_cycle.Add(result.Locations[i]);
+                    double distance = result.distances[i, i + 1];
+                    poprzednie = result.Clients[i].size;
+                    capacity += poprzednie;
+                    FindCycle(result.Locations[i].locationID, k + 1, d + distance, capacity, poprzednie);
+                    used[result.Locations[i].locationID] = false;
+                }
             }
         }
     }

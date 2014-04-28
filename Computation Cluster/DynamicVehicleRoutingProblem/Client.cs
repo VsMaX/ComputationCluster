@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -72,21 +73,36 @@ namespace DynamicVehicleRoutingProblem
 
         public static string ClientsToString(int[][][] subsets)
         {
-            string result ="";
-            for (int i = 0; i <=0; i++)
+            StringBuilder result = new StringBuilder();
+            result.Append("NUMSETS:");
+            result.Append(subsets.Length);
+            result.Append("\n");
+            for (int i = 0; i <subsets.Length; i++)
             {
-                result += "SET\n";
-                for (int j = 0; j < subsets.ElementAt(i).Count(); j++)
+                result.Append("SET:");
+                result.Append(subsets[i].Length.ToString());
+                result.Append("\n");
+                for (int j = 0; j < subsets[i].Length; j++)
                 {
-                    result += "PATH\n";
-                    for (int k = 0; k < subsets.ElementAt(i).ElementAt(j).Count(); k++)
+                    result.Append("PATH:");
+                    result.Append(subsets[i][j].Length);
+                    result.Append("\n");
+                    for (int k = 0; k < subsets[i][j].Length; k++)
                     {
-                        result += subsets.ElementAt(i).ElementAt(j).ElementAt(k).ToString() + "\n"; 
+                        result.Append(subsets[i][j][k].ToString());
+                        result.Append(" "); 
                     }
+                    //result.Append(subsets[i][j].ToArray() +" ";
+                    result.Append("\n");
                 }
- 
+                //result.Append("\n"); 
             }
-            return result; 
+            string filename = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            using (StreamWriter outfile = new StreamWriter(filename + @"\AllTxtFiles.txt"))
+            {
+                outfile.Write(result.ToString());
+            }
+            return result.ToString(); 
         }
     }
 }
