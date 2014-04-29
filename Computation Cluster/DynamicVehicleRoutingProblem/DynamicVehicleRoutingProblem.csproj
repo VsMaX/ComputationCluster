@@ -54,6 +54,7 @@
     <Compile Include="Depot.cs" />
     <Compile Include="DVRP.cs" />
     <Compile Include="DVRPComparer.cs" />
+    <Compile Include="DVRPHelper.cs" />
     <Compile Include="Location.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TaskSolverDVRP.cs" />

@@ -9,6 +9,7 @@ using UCCTaskSolver;
 
 namespace DynamicVehicleRoutingProblem
 {
+
     public class TaskSolverDVRP : TaskSolver
     {
         private DVRP Dvrp;
@@ -171,32 +172,32 @@ namespace DynamicVehicleRoutingProblem
         public List<Location> best_cycle = null;
         public bool[] used;
         public double best = Double.MaxValue;
-        public DVRP result;
-        public int ilosc_sciezek;
+        public DVRP dvrp;
+        //public int ilosc_sciezek;
         public int kk;
 
-        public Backtracking(int[] partialData, DVRP result)
+        public Backtracking(int[] partialData, DVRP dvrp)
         {
             act_cycle = new List<Location>();
             //act_cycle.Add(result.Locations[result.Depots[0].locationID]);
 
             this.clientsId = partialData;
-            this.result = result;
+            this.dvrp = dvrp;
             used = new bool[partialData.Length];
-            ca = result.Capacities;
+            ca = dvrp.Capacities;
             kk = partialData.Length;
         }
 
         public void FindCycle(int v, int k, double d,double time, double capacity)
         {
-            if (d >= best || capacity < 0 || time>result.Depots[0].end) { return; }
+            if (d >= best || capacity < 0 || time > dvrp.Depots[0].end) { return; }
             if (capacity == 0)
             {
-                capacity = result.Capacities;
-                act_cycle.Add(result.Locations[result.Depots[0].locationID]);
+                capacity = dvrp.Capacities;
+                act_cycle.Add(dvrp.Locations[dvrp.Depots[0].locationID]);
                 kk++;
-                double dist = result.distances[v, result.Locations[result.Depots[0].locationID].locationID];
-                double t = dist / result.Speed; 
+                double dist = dvrp.distances[v, dvrp.Locations[dvrp.Depots[0].locationID].locationID];
+                double t = dist / dvrp.Speed; 
                 FindCycle(0, k + 1, d + dist, time+t,capacity);
                 capacity -= 100;
                 kk--;
@@ -206,9 +207,14 @@ namespace DynamicVehicleRoutingProblem
             }
             if (k == kk)
             {
-                best = d;
-                best_cycle = new List<Location>(act_cycle);
-                ilosc_sciezek++;
+                double distToDepot = DVRPHelper.Distance(act_cycle[act_cycle.Count - 1], act_cycle[0]);
+
+                if (d +distToDepot < best)
+                {
+                    best = d +distToDepot;
+                    act_cycle.Add(dvrp.Locations[dvrp.Depots[0].locationID]);
+                    best_cycle = new List<Location>(act_cycle);
+                }
                 return;
             }
 
@@ -221,15 +227,15 @@ namespace DynamicVehicleRoutingProblem
                     //if (act_cycle.Count > k)
                     //    act_cycle[k] = result.Locations[result.Clients[clientsId[i]].locationID];
                     //else
-                        act_cycle.Add(result.Locations[result.Clients[clientsId[i]].locationID]);
+                    act_cycle.Add(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID]);
 
-                    double dist = result.distances[v, result.Locations[result.Clients[clientsId[i]].locationID].locationID];
-                    double t = dist / result.Speed +result.Clients[clientsId[i]].unld; 
-                    capacity += result.Clients[i].size;
-                    FindCycle(result.Locations[result.Clients[clientsId[i]].locationID].locationID, k + 1, d + dist,time+t, capacity);
+                    double dist = dvrp.distances[v, dvrp.Locations[dvrp.Clients[clientsId[i]].locationID].locationID];
+                    double t = dist / dvrp.Speed + dvrp.Clients[clientsId[i]].unld;
+                    capacity += dvrp.Clients[i].size;
+                    FindCycle(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID].locationID, k + 1, d + dist, time + t, capacity);
                     used[i] = false;
-                    capacity -= result.Clients[i].size;
-                    act_cycle.Remove(result.Locations[result.Clients[clientsId[i]].locationID]);
+                    capacity -= dvrp.Clients[i].size;
+                    act_cycle.Remove(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID]);
                 }
             }
         }
