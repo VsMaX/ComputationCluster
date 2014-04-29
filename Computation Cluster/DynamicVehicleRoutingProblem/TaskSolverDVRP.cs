@@ -9,6 +9,7 @@ using UCCTaskSolver;
 
 namespace DynamicVehicleRoutingProblem
 {
+    [MethodBoundary]
     public class TaskSolverDVRP : TaskSolver
     {
         private DVRP Dvrp;
@@ -79,36 +80,36 @@ namespace DynamicVehicleRoutingProblem
         public override byte[] Solve(byte[] partialData, TimeSpan timeout)
         {
             int[][][] partial = DVRP.ParseData(partialData);
-            double droga = Double.MaxValue;
-            List<Location>[] rozwiazanie = new List<Location>[0];
+            double bestPathLength = Double.MaxValue;
+            List<Location>[] actualSol = new List<Location>[0];
             List<Location>[] bestSol = new List<Location>[0];
             for (int set = 0; set < partial.Length; set++)
             {
-                double setLength = 0;
-                rozwiazanie = new List<Location>[partial[set].Length];
+                double actualPathLength = 0;
+                actualSol = new List<Location>[partial[set].Length];
                 for (int path = 0; path < partial[set].Length; path++)
                 {
                     var tsp = new Backtracking(partial[set][path], this.Dvrp);
-                    //result.Clients = tsp.Sortuj(result.Clients)[0];
 
-                    tsp.FindCycle(0, 0, 0, 0,0);//this.Dvrp.Capacities);
+                    tsp.FindCycle(0, 0, 0, 0, 0);//this.Dvrp.Capacities);
+
                     if(tsp.best_cycle != null)
-                        rozwiazanie[path]= new List<Location>(tsp.best_cycle);
-                    setLength += tsp.best;
+                        actualSol[path]= new List<Location>(tsp.best_cycle);
+                    actualPathLength += tsp.best;
                 }
-                if (setLength < droga)
+                if (actualPathLength < bestPathLength)
                 {
-                    droga = setLength;
-                    bestSol = new List<Location>[rozwiazanie.Length];
-                    for (int i = 0; i < rozwiazanie.Length; i++)
-                        bestSol[i] = new List<Location>(rozwiazanie[i]);
+                    bestPathLength = actualPathLength;
+                    bestSol = new List<Location>[actualSol.Length];
+                    for (int i = 0; i < actualSol.Length; i++)
+                        bestSol[i] = new List<Location>(actualSol[i]);
                 }
             }
-            Trace.WriteLine(droga.ToString());
+            Trace.WriteLine(bestPathLength.ToString());
             return partialData;
         }
-  
 
+        #region PARTITION OF PROBLEM
         public static IEnumerable<T[][]> GetAllPartitions<T>(T[] elements)
         {
             return TaskSolverDVRP.GetAllPartitions(new T[][] { }, elements);
@@ -159,6 +160,7 @@ namespace DynamicVehicleRoutingProblem
                     resultSets[0].ToArray(), resultSets[1].ToArray());
             }
         }
+        #endregion
     }
 
     public class Backtracking
@@ -199,7 +201,8 @@ namespace DynamicVehicleRoutingProblem
                 FindCycle(0, k + 1, d + dist, time+t,capacity);
                 capacity -= 100;
                 kk--;
-                act_cycle.Remove(result.Locations[result.Depots[0].locationID]);
+                //act_cycle..Remove(result.Locations[result.Depots[0].locationID]);
+                act_cycle.RemoveAt(k);
                 return;
             }
             if (k == kk)
