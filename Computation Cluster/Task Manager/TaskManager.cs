@@ -36,7 +36,7 @@ namespace Task_Manager
         private DateTime startTime;
         private StatusThreadState state;
         private Queue<DivideProblemMessage> divideProblemMessageQueue;
-        private Queue<PartialProblemsMessage> partialProblemsMessageQueue;
+        private Queue<SolutionsMessage> partialSolutionsMessageQueue;
         public List<TaskSolver> TaskSolvers { get; set; }
         private ulong problemId;
         private object problemIdLock;
@@ -46,7 +46,7 @@ namespace Task_Manager
             communicationModule = new CommunicationModule(serverIp, serverPort, receiveDataTimeout);
             startTime = DateTime.Now;
             divideProblemMessageQueue = new Queue<DivideProblemMessage>();
-            partialProblemsMessageQueue = new Queue<PartialProblemsMessage>();
+            partialSolutionsMessageQueue = new Queue<SolutionsMessage>();
         }
 
         public void Start()
@@ -93,25 +93,48 @@ namespace Task_Manager
         {
             processingThreadCancellationToken = new CancellationTokenSource();
             processingThread = new Thread(ProcessingThread);
-            //processingThread.Start();
+            processingThread.Start();
         }
 
         private void ProcessingThread()
         {
             while (!processingThreadCancellationToken.IsCancellationRequested)
             {
-                //TODO get divideProblemMessage from queue and divide the problem
-                //TODO then open connection to server and send divided problem
                 ProcessDivideProblem();
 
-                //TODO the same for partialProblems but merge them
                 ProcessPartialSolutions();
+                Thread.Sleep(Timeout);
             }
         }
 
         private void ProcessPartialSolutions()
         {
-            
+            SolutionsMessage solution = null;
+            lock (partialSolutionsMessageQueue)
+            {
+                if(partialSolutionsMessageQueue.Count > 0)
+                    solution = partialSolutionsMessageQueue.Dequeue();
+            }
+
+            if (solution == null)
+                return;
+
+            TaskSolver taskSolver = CreateTaskSolver(solution.ProblemType, solution.CommonData);
+
+            //taskSolver.MergeSolution();
+            ////TODO tutaj uzupelnijcie tak zeby laczyc rozwiazanie
+
+            for (int i = 0; i < solution.Solutions.Length; i++)
+            {
+                var partialSolution = solution.Solutions[i];
+                partialSolution.Type = SolutionType.Final;
+            }
+            var socket = communicationModule.SetupClient();
+            communicationModule.Connect(socket);
+            var message = SerializeMessage(solution);
+            communicationModule.SendData(message, socket);
+
+            communicationModule.CloseSocket(socket);
         }
 
         private void ProcessDivideProblem()
@@ -124,6 +147,8 @@ namespace Task_Manager
             }
             if (processedMessage == null)
                 return;
+            
+            _logger.Debug("Processing divideMessage. " + processedMessage.Id);
 
             TaskSolver taskSolver = CreateTaskSolver(processedMessage.ProblemType, processedMessage.Data);
 
@@ -200,7 +225,7 @@ namespace Task_Manager
                 if(!String.IsNullOrEmpty(receivedMessage))
                     ProcessMessage(receivedMessage);
 
-                Thread.Sleep(this.Timeout);
+                Thread.Sleep(Timeout);
             }
         }
 
@@ -213,7 +238,7 @@ namespace Task_Manager
                     ProcessCaseDivideProblem(message);
                     break;
                 case "PartialProblems":
-                    ProcessCasePartialProblems(message);
+                    ProcessCasePartialSolutions(message);
                     break;
                 default:
                     break;
@@ -230,12 +255,12 @@ namespace Task_Manager
             }
         }
 
-        private void ProcessCasePartialProblems(string message)
+        private void ProcessCasePartialSolutions(string message)
         {
-            var dserializedPartialProblemsMessage = DeserializeMessage<PartialProblemsMessage>(message);
-            lock (partialProblemsMessageQueue)
+            var dserializedPartialSolutionsMessage = DeserializeMessage<SolutionsMessage>(message);
+            lock (partialSolutionsMessageQueue)
             {
-                partialProblemsMessageQueue.Enqueue(dserializedPartialProblemsMessage);
+                partialSolutionsMessageQueue.Enqueue(dserializedPartialSolutionsMessage);
             }
         }
 
@@ -243,38 +268,9 @@ namespace Task_Manager
         {
             statusThreadCancellationTokenSource.Cancel();
             statusThread.Join();
-            //_logger.Info("Stopped listening");
+            processingThreadCancellationToken.Cancel();
+            processingThread.Join();
+            _logger.Info("TaskManager stopped");
         }
-
-        public void Disconnect()
-        {
-            //communicationModule.Disconnect();
-        }
-
-        //public void DivideProblem(string statusMessageResponse)
-        //{
-        //    var serializer = new ComputationSerializer<DivideProblemMessage>();
-        //    DivideProblemMessage dpm = serializer.Deserialize(statusMessageResponse);
-
-        //    tsp = new TSP(dpm.Data);
-        //    tsp.DivideProblem((int)dpm.ComputationalNodes);
-        //    SolvePartialProblemsPartialProblem[] solvepp = new SolvePartialProblemsPartialProblem[tsp.PartialProblems.Length];
-
-
-        //    for (int i = 0; i < tsp.PartialProblems.Length; i++)
-        //    {
-        //        solvepp[i] = new SolvePartialProblemsPartialProblem() { Data = tsp.PartialProblems[i], TaskId = (ulong)i };    
-        //    }
-
-        //        communicationModule.Connect(socket);
-           
-        //    //SolvePartialProblemsPartialProblem sp = new SolvePartialProblemsPartialProblem() { Data = new byte[] { 1, 2, 3 }, TaskId = 4 };
-        //    var partialproblems = new PartialProblemsMessage() { Id = dpm.Id, CommonData = dpm.Data, PartialProblems = solvepp, ProblemType = tsp.Name, SolvingTimeout = 30, SolvingTimeoutSpecified = true };
-        //    //var msg = SerializeMessage<PartialProblemsMessage>(partialproblems);
-        //    //var msgBytes = CommunicationModule.ConvertStringToData(msg);
-        //    //communicationModule.SendData(msgBytes);
-
-        //    //communicationModule.Disconnect();
-        //}
     }
 }

@@ -40,17 +40,19 @@ namespace Computational_Server
         private ulong solutionId;
         private object solutionIdLock = new object();
         MethodInfo serializeMessageMethod;
+        private List<SolutionsMessage> finalSolutions;
 
-        public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule, int processingThreadSleepTime)
+        public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule, int threadSleepTime)
         {
             solveRequests = new ConcurrentDictionary<ulong, SolveRequestMessage>();
             activeNodes = new Dictionary<ulong, NodeEntry>();
+            finalSolutions = new List<SolutionsMessage>();
             partialSolutions = new List<SolutionsMessage>();
             DefaultTimeout = nodeTimeout;
             nodesId = 1;
             solutionId = 1;
             this.communicationModule = communicationModule;
-            this.processingThreadSleepTime = processingThreadSleepTime;
+            this.processingThreadSleepTime = threadSleepTime;
             partialProblems = new Dictionary<ulong, PartialProblemsMessage>();
             serializeMessageMethod = typeof(ComputationServer).GetMethod("SerializeMessage");
         }
@@ -80,6 +82,7 @@ namespace Computational_Server
             while (!processingThreadCancellationToken.IsCancellationRequested)
             {
                 RemoveUnusedNodes();
+
                 Thread.Sleep(processingThreadSleepTime);
             }
         }
@@ -210,6 +213,14 @@ namespace Computational_Server
 
             //TODO merge rozwiazan i spr czy wszystkie partialSolutions sa juz rozwiazane
             SolutionsMessage oldSolutions = null;
+            if (IsFinal(deserializedMessage))
+            {
+                lock (finalSolutions)
+                {
+                    finalSolutions.Add(deserializedMessage);
+                }
+            }
+
             lock (partialSolutions)
             {
                 oldSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
@@ -284,6 +295,8 @@ namespace Computational_Server
             var nodeTask = GetTaskForNode(node);
             if (nodeTask == null)
                 return String.Empty;
+
+            //TODO update solutions from status when received from CN
 
             var declaringType = nodeTask.GetType();
             
@@ -419,7 +432,6 @@ namespace Computational_Server
             ulong solutionId = GenerateNewSolutionId();
 
             var solveRequestResponse = new SolveRequestResponseMessage() { Id = solutionId };
-
             if (!solveRequests.TryAdd(solutionId, deserializedMessage))
             {
                 _logger.Error("Could not add SolveRequest to dictionary. SolutionId: " + solutionId + ", message: " + deserializedMessage);

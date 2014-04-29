@@ -184,7 +184,6 @@ namespace Communication_Library
                 _logger.Debug(String.Format("Read {0} bytes from socket. \n Data : {1}",
                     content.Length, content));
             }
-            _logger.Debug("Received data: " + content);
             receiveDone.Set();
         }
 
