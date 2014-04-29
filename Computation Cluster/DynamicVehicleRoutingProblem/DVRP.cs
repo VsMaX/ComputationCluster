@@ -277,14 +277,11 @@ namespace DynamicVehicleRoutingProblem
             }
 
             instance.distances = new double[instance.Locations.Length, instance.Locations.Length];
-
             for (int j = 0; j < instance.Locations.Length; j++)
             {
                 for (int k = 0; k < instance.Locations.Length; k++)
                 {
-                    double x = instance.Locations[instance.Locations[j].locationID].x - instance.Locations[instance.Locations[k].locationID].x;
-                    double y = instance.Locations[instance.Locations[j].locationID].y - instance.Locations[instance.Locations[k].locationID].y;
-                    instance.distances[j, k] = Math.Sqrt(x * x + y * y);
+                    instance.distances[j, k] = DVRPHelper.Distance(instance.Locations[j], instance.Locations[k]);
                 }
             }
 
