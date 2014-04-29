@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ using log4net;
 
 namespace Computational_Server
 {
+    [MethodBoundary]
     public class ComputationServer : BaseNode
     {
         private Thread listeningThread;
@@ -26,9 +28,9 @@ namespace Computational_Server
         private CancellationTokenSource processingThreadCancellationToken;
 
         private ConcurrentDictionary<ulong, SolveRequestMessage> solveRequests;
-        private ConcurrentDictionary<ulong, NodeEntry> activeNodes;
-        private ConcurrentBag<SolutionsMessage> partialSolutions;
-        private List<PartialProblemsMessage> partialProblems; 
+        private Dictionary<ulong, NodeEntry> activeNodes;
+        private List<SolutionsMessage> partialSolutions;
+        private Dictionary<ulong, PartialProblemsMessage> partialProblems;
         private ICommunicationModule communicationModule;
         public readonly int processingThreadSleepTime;
         public readonly TimeSpan DefaultTimeout;
@@ -37,18 +39,20 @@ namespace Computational_Server
         private Socket serverSocket;
         private ulong solutionId;
         private object solutionIdLock = new object();
+        MethodInfo serializeMessageMethod;
 
         public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule, int processingThreadSleepTime)
         {
             solveRequests = new ConcurrentDictionary<ulong, SolveRequestMessage>();
-            activeNodes = new ConcurrentDictionary<ulong, NodeEntry>();
-            partialSolutions = new ConcurrentBag<SolutionsMessage>();
+            activeNodes = new Dictionary<ulong, NodeEntry>();
+            partialSolutions = new List<SolutionsMessage>();
             DefaultTimeout = nodeTimeout;
             nodesId = 1;
             solutionId = 1;
             this.communicationModule = communicationModule;
             this.processingThreadSleepTime = processingThreadSleepTime;
-            partialProblems = new List<PartialProblemsMessage>();
+            partialProblems = new Dictionary<ulong, PartialProblemsMessage>();
+            serializeMessageMethod = typeof(ComputationServer).GetMethod("SerializeMessage");
         }
 
         public void StartServer()
@@ -89,8 +93,12 @@ namespace Computational_Server
                 {
                     var nodeToDelete = nodesToDelete[i];
                     NodeEntry deletedNode = null;
-                    if (!activeNodes.TryRemove(nodeToDelete.Key, out deletedNode))
-                        _logger.Error("Could not remove node from activeNodes list. NodeId: " + nodeToDelete.Key);
+                    lock (activeNodes)
+                    {
+                        if (!activeNodes.Remove(nodeToDelete.Key))
+                            _logger.Error("Could not remove node from activeNodes list. NodeId: " + nodeToDelete.Key);
+                    }
+                    _logger.Debug("Removed node from activeNodes list. NodeId: " + nodeToDelete.Key);
                 }
             }
         }
@@ -123,8 +131,6 @@ namespace Computational_Server
         private string ProcessMessage(string message)
         {
             var messageName = this.GetMessageName(message);
-            _logger.Debug("Received " + messageName);
-            _logger.Debug("XML Data: " + message);
             switch (messageName)
             {
                 case "Register":
@@ -144,16 +150,11 @@ namespace Computational_Server
 
                 case "Solutions":
                     return this.ProcessCaseSolutions(message);
-
+                    
                 default:
                     break;
             }
             return String.Empty;
-        }
-
-        private string ProcessCasePartialProblems(string message)
-        {
-            throw new NotImplementedException();
         }
 
         private string ProcessCaseRegister(string message)
@@ -198,7 +199,7 @@ namespace Computational_Server
             var node = new NodeEntry(newId, type, solvableProblems, parallelThreads);
             lock (activeNodes)
             {
-                activeNodes.TryAdd(newId, node);
+                activeNodes.Add(newId, node);
                 _logger.Debug("Node added to server list");
             }
         }
@@ -207,9 +208,42 @@ namespace Computational_Server
         {
             var deserializedMessage = DeserializeMessage<SolutionsMessage>(message);
 
-            //TODO Oczekiwanie na wlasciwego TM i przesłanie do niego poszczegolnych solucji
+            //TODO merge rozwiazan i spr czy wszystkie partialSolutions sa juz rozwiazane
+            SolutionsMessage oldSolutions = null;
+            lock (partialSolutions)
+            {
+                oldSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
+                MergeSolutions(oldSolutions, deserializedMessage);
+            }
+
+            if(oldSolutions == null)
+                throw new Exception("Could not find solution for solutionId: " + deserializedMessage.Id);
 
             return string.Empty;
+        }
+
+        private bool IsFinal(SolutionsMessage solutionsMessage)
+        {
+            bool final = true;
+            for (int i = 0; i < solutionsMessage.Solutions.Length; i++)
+            {
+                var solution = solutionsMessage.Solutions[i];
+                if (solution.Type != SolutionType.Final)
+                    final = false;
+            }
+            return final;
+        }
+
+        private bool AllPartialSolutionSolved(SolutionsMessage oldSolutions)
+        {
+            bool solved = true;
+            for (int i = 0; i < oldSolutions.Solutions.Length; i++)
+            {
+                var solution = oldSolutions.Solutions[i];
+                if (solution.Type != SolutionType.Partial)
+                    solved = false;
+            }
+            return solved;
         }
 
         private string ProcessCaseSolvePartialProblems(string message)
@@ -217,13 +251,24 @@ namespace Computational_Server
             var deserializedMessage = DeserializeMessage<PartialProblemsMessage>(message);
             lock (partialProblems)
             {
-                partialProblems.Add(deserializedMessage);
+                partialProblems.Add(deserializedMessage.Id, deserializedMessage);
             }
-            //TODO sprawdzic czy wiadomosc zostala odebrana przez CN czy Tm
-            //TODO jesli przez CN to wyslij do TMa
-            //TODO jesli przez TM to wyslac podzielone czesci do CNow
-
             return string.Empty;
+        }
+
+        private void MergeSolutions(SolutionsMessage oldSolutionsMessage, SolutionsMessage newSolutionsMessage)
+        {
+            for (int i = 0; i < newSolutionsMessage.Solutions.Length; i++)
+            {
+                var newSolution = newSolutionsMessage.Solutions[i];
+                var oldSolution = oldSolutionsMessage.Solutions.FirstOrDefault(x => x.TaskId == newSolution.TaskId);
+                if (oldSolution == null)
+                    throw new Exception("Could not find task for taskId: " + newSolution.TaskId + ", problemId: " + newSolutionsMessage.Id);
+                oldSolution.Data = newSolution.Data;
+                oldSolution.ComputationsTime = newSolution.ComputationsTime;
+                oldSolution.TimeoutOccured = newSolution.TimeoutOccured;
+                oldSolution.Type = newSolution.Type;
+            }
         }
 
         private string ProcessCaseStatus(string message)
@@ -231,21 +276,18 @@ namespace Computational_Server
             var deserializedStatusMessage = DeserializeMessage<StatusMessage>(message);
             _logger.Info("Received status from nodeId: " + deserializedStatusMessage.Id);
             
-            //TODO update nodes lifetime
             UpdateNodesLifetime(deserializedStatusMessage);
 
             var node = GetActiveNode(deserializedStatusMessage.Id);
             if (node == null)
                 return String.Empty;
-            //TODO if status comes from TM, get all SolveRequests and send Divide to TM
-            //TODO if status comes from CN, send all problems divided for this node
             var nodeTask = GetTaskForNode(node);
             if (nodeTask == null)
                 return String.Empty;
 
             var declaringType = nodeTask.GetType();
-            MethodInfo method = typeof(ComputationServer).GetMethod("SerializeMessage");
-            MethodInfo generic = method.MakeGenericMethod(declaringType);
+            
+            MethodInfo generic = serializeMessageMethod.MakeGenericMethod(declaringType);
 
             return (string)generic.Invoke(this, new object[] { nodeTask });
         }
@@ -269,7 +311,12 @@ namespace Computational_Server
             PartialProblemsMessage partialProblem = null;
             lock (partialProblems)
             {
-                partialProblem = partialProblems.FirstOrDefault(x => node.SolvingProblems.Contains(x.ProblemType));
+                if (partialProblems.Any(x => node.SolvingProblems.Contains(x.Value.ProblemType)))
+                {
+                    var partialProblemKeyValue =
+                       partialProblems.FirstOrDefault(x => node.SolvingProblems.Contains(x.Value.ProblemType));
+                    partialProblem = partialProblemKeyValue.Value;
+                }
             }
             return partialProblem;
         }
@@ -287,7 +334,7 @@ namespace Computational_Server
 
         private SolutionsMessage GetPartialSolutionForType(RegisterType type)
         {
-            var partialSolution = partialSolutions.FirstOrDefault(x => x.ProblemType == type.ToString());
+            var partialSolution = partialSolutions.FirstOrDefault(AllPartialSolutionSolved);
             return partialSolution;
         }
 
@@ -337,9 +384,17 @@ namespace Computational_Server
                 lock (activeNodes)
                 {
                     NodeEntry node = null;
-                    if (!activeNodes.TryGetValue(statusMessage.Id, out node))
-                        return;
-                    node.LastStatusSentTime = DateTime.Now;
+                    lock (activeNodes)
+                    {
+                        node = activeNodes[statusMessage.Id];
+                        if (node == null)
+                        {
+                            _logger.Error("Error updating node lifetime. Could not find node: " + statusMessage.Id);
+                            return;
+                        }
+                        node.LastStatusSentTime = DateTime.Now;
+                        _logger.Debug("Updated node lifetime. Nodeid: " + statusMessage.Id);
+                    }
                 }
             }
             catch (Exception ex)

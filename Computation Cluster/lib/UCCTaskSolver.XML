@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>UCCTaskSolver</name>
+    </assembly>
+    <members>
+        <member name="T:UCCTaskSolver.TaskSolver">
+            <summary>
+            The class representing the algorithms for solving, dividing and merging problems
+            </summary>
+        </member>
+        <member name="F:UCCTaskSolver.TaskSolver._problemData">
+            <summary>
+            The field for storing serialized problem data
+            </summary>
+        </member>
+        <member name="M:UCCTaskSolver.TaskSolver.#ctor(System.Byte[])">
+            <summary>
+            The TaskSolver objects should be constructed from the data
+            </summary>
+            <param name="problemData"></param>
+        </member>
+        <member name="M:UCCTaskSolver.TaskSolver.Solve(System.Byte[],System.TimeSpan)">
+            <summary>
+            Finds optimal solution (or suboptimal but in the given time) for a provided problem
+            </summary>
+            <param name="partialData">Partial data part - definition of subspace/partial solution to be checked in base64</param>
+            <param name="timeout">Limit of time for computations</param>
+        </member>
+        <member name="M:UCCTaskSolver.TaskSolver.DivideProblem(System.Int32)">
+            <summary>
+            Divides problem into partial problems
+            </summary>
+            <param name="threadCount">Number of threads in the whole cluster</param>
+        </member>
+        <member name="M:UCCTaskSolver.TaskSolver.MergeSolution(System.Byte[][])">
+            <summary>
+            Merges/chooses the best solution from the set of solutions
+            </summary>
+            <param name="solutions">Partial solutions / suboptimal solutions</param>
+        </member>
+        <member name="P:UCCTaskSolver.TaskSolver.Solution">
+            <summary>
+            Solution in base64
+            </summary>
+        </member>
+        <member name="P:UCCTaskSolver.TaskSolver.PartialProblems">
+            <summary>
+            Partial problems in base64
+            </summary>
+        </member>
+        <member name="P:UCCTaskSolver.TaskSolver.Name">
+            <summary>
+            The name of the class of problems that could be solved (unique name for each team)
+            </summary>
+        </member>
+        <member name="P:UCCTaskSolver.TaskSolver.State">
+            <summary>
+            The state of task solver
+            </summary>
+        </member>
+        <member name="E:UCCTaskSolver.TaskSolver.ProblemSolvingFinished">
+            <summary>
+            Event raised when the TaskSolver stops solving or merging computations (could be because of timeout)
+            </summary>
+        </member>
+        <member name="E:UCCTaskSolver.TaskSolver.ProblemDividingFinished">
+            <summary>
+            Event raised when the TaskSolver stops dividing problems (could be because of timeout)
+            </summary>
+        </member>
+        <member name="E:UCCTaskSolver.TaskSolver.SolutionsMergingFinished">
+            <summary>
+            Event raised when the TaskSolver stops merging the solutions (could be because of timeout)
+            </summary>
+        </member>
+        <member name="E:UCCTaskSolver.TaskSolver.ErrorOccured">
+            <summary>
+            Event raised when algorithm in TaskSolver throws an exception
+            </summary>
+        </member>
+        <member name="T:UCCTaskSolver.TaskSolver.TaskSolverState">
+            <summary>
+            Task solver states - could be in many of them
+            </summary>
+        </member>
+        <member name="F:UCCTaskSolver.TaskSolver.TaskSolverState.Idle">
+            <summary>
+            The task solver is not making any computations
+            </summary>
+        </member>
+        <member name="F:UCCTaskSolver.TaskSolver.TaskSolverState.Solving">
+            <summary>
+            The task solver is or was solving the partial problem
+            </summary>
+        </member>
+        <member name="F:UCCTaskSolver.TaskSolver.TaskSolverState.Dividing">
+            <summary>
+            The task solver is or was dividing problem into partial problems
+            </summary>
+        </member>
+        <member name="F:UCCTaskSolver.TaskSolver.TaskSolverState.Merging">
+            <summary>
+            The task solver is or was merging partial solutions
+            </summary>
+        </member>
+        <member name="F:UCCTaskSolver.TaskSolver.TaskSolverState.Timeout">
+            <summary>
+            The task solver encountered a timeout
+            </summary>
+        </member>
+        <member name="F:UCCTaskSolver.TaskSolver.TaskSolverState.Error">
+            <summary>
+            The task solver encountered an error
+            </summary>
+        </member>
+        <member name="T:UCCTaskSolver.TaskSolver.ComputationsFinishedEventHandler">
+            <summary>
+            The delegate for handling events raised by TaskSolver
+            </summary>
+            <param name="eventArgs"></param>
+            <param name="sender"></param>
+        </member>
+    </members>
+</doc>

@@ -169,7 +169,6 @@ namespace Communication_Library
             StateObject state = (StateObject)ar.AsyncState;
             Socket handler = state.workSocket;
             
-            _logger.Debug("Waiting for EndReceive");
             // Read data from the client socket. 
             int bytesRead = handler.EndReceive(ar);
 

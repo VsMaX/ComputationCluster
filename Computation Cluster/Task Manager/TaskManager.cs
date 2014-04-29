@@ -35,12 +35,18 @@ namespace Task_Manager
         private CancellationTokenSource processingThreadCancellationToken;
         private DateTime startTime;
         private StatusThreadState state;
-        private ConcurrentQueue<DivideProblemMessage> divideProblemMessageQueue;
+        private Queue<DivideProblemMessage> divideProblemMessageQueue;
+        private Queue<PartialProblemsMessage> partialProblemsMessageQueue;
+        public List<TaskSolver> TaskSolvers { get; set; }
+        private ulong problemId;
+        private object problemIdLock;
 
         public TaskManager(string serverIp, int serverPort, int receiveDataTimeout)
         {
             communicationModule = new CommunicationModule(serverIp, serverPort, receiveDataTimeout);
             startTime = DateTime.Now;
+            divideProblemMessageQueue = new Queue<DivideProblemMessage>();
+            partialProblemsMessageQueue = new Queue<PartialProblemsMessage>();
         }
 
         public void Start()
@@ -94,10 +100,78 @@ namespace Task_Manager
         {
             while (!processingThreadCancellationToken.IsCancellationRequested)
             {
-
                 //TODO get divideProblemMessage from queue and divide the problem
                 //TODO then open connection to server and send divided problem
+                ProcessDivideProblem();
+
+                //TODO the same for partialProblems but merge them
+                ProcessPartialSolutions();
             }
+        }
+
+        private void ProcessPartialSolutions()
+        {
+            
+        }
+
+        private void ProcessDivideProblem()
+        {
+            DivideProblemMessage processedMessage = null;
+            lock (divideProblemMessageQueue)
+            {
+                if(divideProblemMessageQueue.Count > 0)
+                    processedMessage = divideProblemMessageQueue.Dequeue();
+            }
+            if (processedMessage == null)
+                return;
+
+            TaskSolver taskSolver = CreateTaskSolver(processedMessage.ProblemType, processedMessage.Data);
+
+            var dividedProblem = taskSolver.DivideProblem((int)processedMessage.ComputationalNodes);
+
+            var problemId = GetProblemId();
+
+            var solutionsMessage = new PartialProblemsMessage()
+            {
+                CommonData = null,
+                Id = problemId,
+                ProblemType = processedMessage.ProblemType,
+                SolvingTimeout = (ulong) Timeout.TotalMilliseconds,
+                SolvingTimeoutSpecified = true,
+                PartialProblems = new SolvePartialProblemsPartialProblem[(int) processedMessage.ComputationalNodes]
+            };
+
+            for (int i = 0; i < (int)processedMessage.ComputationalNodes; i++)
+            {
+                solutionsMessage.PartialProblems[i] = new SolvePartialProblemsPartialProblem()
+                {
+                    Data = dividedProblem[i],
+                    TaskId = (ulong)i
+                };
+            }
+
+            var socket = communicationModule.SetupClient();
+            communicationModule.Connect(socket);
+            var message = SerializeMessage(solutionsMessage);
+            communicationModule.SendData(message, socket);
+            communicationModule.CloseSocket(socket);
+        }
+
+        private ulong GetProblemId()
+        {
+            ulong problemIdTmp = 0;
+
+            lock (problemIdLock)
+            {
+                problemIdTmp = problemId;
+                problemId++;
+            }
+            return problemIdTmp;
+        }
+
+        private TaskSolver CreateTaskSolver(string problemType, byte[] data)
+        {
+            return new TaskSolverDVRP(data);
         }
 
         public void SendStatusThread()
@@ -133,34 +207,36 @@ namespace Task_Manager
         private string ProcessMessage(string message)
         {
             var messageName = this.GetMessageName(message);
-            //_logger.Debug("Received " + messageName);
-            //_logger.Debug("XML Data: " + message);
             switch (messageName)
             {
                 case "DivideProblem":
-                    return this.ProcessCaseDivideProblem(message);
-
+                    ProcessCaseDivideProblem(message);
+                    break;
                 case "PartialProblems":
-                    return this.ProcessCasePartialProblems(message);
+                    ProcessCasePartialProblems(message);
+                    break;
                 default:
                     break;
             }
             return String.Empty;
         }
 
-        private string ProcessCaseDivideProblem(string message)
+        private void ProcessCaseDivideProblem(string message)
         {
             var deserializedDivideProblemMessage = DeserializeMessage<DivideProblemMessage>(message);
-            divideProblemMessageQueue.Enqueue(deserializedDivideProblemMessage);
-
-            return string.Empty;
+            lock (divideProblemMessageQueue)
+            {
+                divideProblemMessageQueue.Enqueue(deserializedDivideProblemMessage);
+            }
         }
 
-        private string ProcessCasePartialProblems(string message)
+        private void ProcessCasePartialProblems(string message)
         {
-            var deserializedMessage = DeserializeMessage<PartialProblemsMessage>(message);
-
-            return string.Empty;
+            var dserializedPartialProblemsMessage = DeserializeMessage<PartialProblemsMessage>(message);
+            lock (partialProblemsMessageQueue)
+            {
+                partialProblemsMessageQueue.Enqueue(dserializedPartialProblemsMessage);
+            }
         }
 
         public void Stop()

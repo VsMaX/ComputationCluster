@@ -14,7 +14,7 @@ namespace Communication_Library
         protected static readonly ILog _logger =
             LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        protected string SerializeMessage<T>(T message) where T : ComputationMessage
+        public string SerializeMessage<T>(T message) where T : ComputationMessage
         {
             var serializer = new ComputationSerializer<T>();
             try
@@ -28,7 +28,7 @@ namespace Communication_Library
             }
         }
 
-        protected T DeserializeMessage<T>(string message) where T : ComputationMessage
+        public T DeserializeMessage<T>(string message) where T : ComputationMessage
         {
             var serializer = new ComputationSerializer<T>();
             try
@@ -42,7 +42,7 @@ namespace Communication_Library
             }
         }
 
-        protected virtual string GetMessageName(string message)
+        public virtual string GetMessageName(string message)
         {
             var doc = new XmlDocument();
             try
