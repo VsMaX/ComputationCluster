@@ -30,6 +30,7 @@ namespace Computational_Server
         private ConcurrentDictionary<ulong, SolveRequestMessage> solveRequests;
         private Dictionary<ulong, NodeEntry> activeNodes;
         private List<SolutionsMessage> partialSolutions;
+        private List<SolutionsMessage> finalSolutions;
         private Dictionary<ulong, PartialProblemsMessage> partialProblems;
         private ICommunicationModule communicationModule;
         public readonly int processingThreadSleepTime;
@@ -40,7 +41,7 @@ namespace Computational_Server
         private ulong solutionId;
         private object solutionIdLock = new object();
         MethodInfo serializeMessageMethod;
-        private List<SolutionsMessage> finalSolutions;
+        
 
         public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule, int threadSleepTime)
         {
@@ -211,7 +212,6 @@ namespace Computational_Server
         {
             var deserializedMessage = DeserializeMessage<SolutionsMessage>(message);
 
-            //TODO merge rozwiazan i spr czy wszystkie partialSolutions sa juz rozwiazane
             SolutionsMessage oldSolutions = null;
             if (IsFinal(deserializedMessage))
             {
@@ -289,6 +289,8 @@ namespace Computational_Server
             
             UpdateNodesLifetime(deserializedStatusMessage);
 
+            UpdateSolutionsStatus(deserializedStatusMessage);
+
             var node = GetActiveNode(deserializedStatusMessage.Id);
             if (node == null)
                 return String.Empty;
@@ -296,13 +298,25 @@ namespace Computational_Server
             if (nodeTask == null)
                 return String.Empty;
 
-            //TODO update solutions from status when received from CN
-
             var declaringType = nodeTask.GetType();
             
             MethodInfo generic = serializeMessageMethod.MakeGenericMethod(declaringType);
 
             return (string)generic.Invoke(this, new object[] { nodeTask });
+        }
+
+        private void UpdateSolutionsStatus(StatusMessage statusMessage)
+        {
+            foreach (var thread in statusMessage.Threads.Where(x => x.State == StatusThreadState.Busy))
+            {
+                SolutionsMessage solution = null;
+                lock (partialSolutions)
+                {
+                    solution = partialSolutions.FirstOrDefault(x => x.Id == thread.ProblemInstanceId);
+                    var subSolution = solution.Solutions.FirstOrDefault(x => x.TaskId == thread.TaskId);
+                    subSolution.ComputationsTime += thread.HowLong;
+                }
+            }
         }
 
         private ComputationMessage GetTaskForNode(NodeEntry node)
@@ -359,20 +373,22 @@ namespace Computational_Server
         private DivideProblemMessage GetDivideProblemMessageForType(List<string> solvingTypes)
         {
             DivideProblemMessage divideProblemMessage = null;
-            KeyValuePair<ulong, SolveRequestMessage> solveRequest = new KeyValuePair<ulong,SolveRequestMessage>();
+            ulong solveRequestId = 0;
+            SolveRequestMessage solveRequest = new SolveRequestMessage();
             lock(solveRequests)
             {
-                solveRequest = solveRequests.FirstOrDefault(x => solvingTypes.Contains(x.Value.ProblemType));
+                solveRequestId = solveRequests.FirstOrDefault(x => solvingTypes.Contains(x.Value.ProblemType)).Key;
+                solveRequests.TryRemove(solveRequestId, out solveRequest);
             }
 
-            if (solveRequest.Value != null)
+            if (solveRequest != null)
             {
                 divideProblemMessage = new DivideProblemMessage()
                 {
                     ComputationalNodes = (ulong)activeNodes.Count,
-                    Data = solveRequest.Value.Data,
-                    ProblemType = solveRequest.Value.ProblemType,
-                    Id = solveRequest.Key
+                    Data = solveRequest.Data,
+                    ProblemType = solveRequest.ProblemType,
+                    Id = solveRequestId
                 };
             }
             
@@ -418,11 +434,18 @@ namespace Computational_Server
 
         private string ProcessCaseSolutionRequest(string message)
         {
-            throw new NotImplementedException();
-            var deserializedSolutionRequestMessage = DeserializeMessage<SolutionRequestMessage>(message);
+            var deserializedMessage = DeserializeMessage<SolutionRequestMessage>(message);
+            SolutionsMessage solution = null;
 
+            lock (finalSolutions)
+            {
+                solution = finalSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
+            }
 
-            return SerializeMessage<SolutionsMessage>(null);
+            if (solution == null)
+                return String.Empty;
+            
+            return SerializeMessage<SolutionsMessage>(solution);
         }
 
         private string ProcessCaseSolveRequest(string message)

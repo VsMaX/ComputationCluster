@@ -183,15 +183,20 @@ namespace Communication_Library
                 content = state.sb.ToString();
                 _logger.Debug(String.Format("Read {0} bytes from socket. \n Data : {1}",
                     content.Length, content));
+                receiveDone.Set();
             }
-            receiveDone.Set();
         }
 
         public static string ConvertDataToString(byte[] buffer, int bytesRead)
         {
             if (bytesRead > 0)
-                return Encoding.UTF8.GetString(buffer, 0,
+            {
+                var message = Encoding.UTF8.GetString(buffer, 0,
                         bytesRead);
+                message = message.Replace("\0", String.Empty);
+                message = message.Trim();
+                return message;
+            }
             return String.Empty;
         }
 
@@ -210,9 +215,9 @@ namespace Communication_Library
             // Client  socket.
             public Socket workSocket = null;
             // Size of receive buffer.
-            public const int BufferSize = 1024;
+            public const int BufferSize = 1000 * 1024;
             // Receive buffer.
-            public byte[] buffer = new byte[BufferSize];
+            public byte[] buffer = new byte[1000 * 1024];
             // Received data string.
             public StringBuilder sb = new StringBuilder();
         }
