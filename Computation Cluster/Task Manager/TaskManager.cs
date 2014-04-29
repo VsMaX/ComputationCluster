@@ -25,7 +25,6 @@ namespace Task_Manager
         private ICommunicationModule communicationModule;
         public TSP tsp;
         public ulong NodeId { get; set; }
-        [DefaultValue(1000)]
         public TimeSpan Timeout { get; set; }
         public int NumberOfThreads { get; set; }
 
@@ -41,12 +40,13 @@ namespace Task_Manager
         private ulong problemId;
         private object problemIdLock;
 
-        public TaskManager(string serverIp, int serverPort, int receiveDataTimeout)
+        public TaskManager(string serverIp, int serverPort, int receiveDataTimeout, int threadSleepTimeout)
         {
             communicationModule = new CommunicationModule(serverIp, serverPort, receiveDataTimeout);
             startTime = DateTime.Now;
             divideProblemMessageQueue = new Queue<DivideProblemMessage>();
             partialSolutionsMessageQueue = new Queue<SolutionsMessage>();
+            Timeout = new TimeSpan(0, 0, 0, threadSleepTimeout);
         }
 
         public void Start()
@@ -225,7 +225,7 @@ namespace Task_Manager
                 if(!String.IsNullOrEmpty(receivedMessage))
                     ProcessMessage(receivedMessage);
 
-                Thread.Sleep(Timeout);
+                Thread.Sleep((int)(0.8f * Timeout.TotalMilliseconds));
             }
         }
 

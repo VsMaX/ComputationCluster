@@ -70,29 +70,19 @@ namespace Computational_Client
                 string content = File.ReadAllText(filename);
                 wiadomosc.Text = content;
 
-                var computationalClient = new ComputationClient("127.0.0.1", 5555, 5000);
-                
-                //byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
-                var serializer = new ComputationSerializer<SolveRequestMessage>();
-                //var sr = new SolveRequestMessage() { Data = null, ProblemType = "Ciężki problem", SolvingTimeout = 10000 };
-                try
+                CommunicationModule cm = new CommunicationModule("127.0.0.1", 5555, 5000);
+                var socket = cm.SetupClient();
+                cm.Connect(socket);
+                SolveRequestMessage solveRequestMessage = new SolveRequestMessage()
                 {
-                    SolveRequestMessage sr = serializer.Deserialize(content);
-                    computationalClient.SendSolveRequest(sr);
-
-                    string sr2 = computationalClient.ReceiveDataFromServer();
-                    potwierdzenie.Text = sr2;
-                }
-                catch (SystemException ex)
-                {
-                    //TODO exception handling
-                    MessageBox.Show("Wczytano niewłaściwy plik", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-
-                browse.ClickMode = ClickMode.Release;
-
+                    Data = CommunicationModule.ConvertStringToData(content),
+                    ProblemType = "DVRP",
+                    SolvingTimeout = 100000
+                };
+                BaseNode bn = new BaseNode();
+                cm.SendData(bn.SerializeMessage(solveRequestMessage), socket);
+                cm.CloseSocket(socket);
             }
-
         }
     }
 }
