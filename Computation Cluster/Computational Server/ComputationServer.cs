@@ -373,20 +373,22 @@ namespace Computational_Server
         private DivideProblemMessage GetDivideProblemMessageForType(List<string> solvingTypes)
         {
             DivideProblemMessage divideProblemMessage = null;
-            KeyValuePair<ulong, SolveRequestMessage> solveRequest = new KeyValuePair<ulong,SolveRequestMessage>();
+            ulong solveRequestId = 0;
+            SolveRequestMessage solveRequest = new SolveRequestMessage();
             lock(solveRequests)
             {
-                solveRequest = solveRequests.FirstOrDefault(x => solvingTypes.Contains(x.Value.ProblemType));
+                solveRequestId = solveRequests.FirstOrDefault(x => solvingTypes.Contains(x.Value.ProblemType)).Key;
+                solveRequests.TryRemove(solveRequestId, out solveRequest);
             }
 
-            if (solveRequest.Value != null)
+            if (solveRequest != null)
             {
                 divideProblemMessage = new DivideProblemMessage()
                 {
                     ComputationalNodes = (ulong)activeNodes.Count,
-                    Data = solveRequest.Value.Data,
-                    ProblemType = solveRequest.Value.ProblemType,
-                    Id = solveRequest.Key
+                    Data = solveRequest.Data,
+                    ProblemType = solveRequest.ProblemType,
+                    Id = solveRequestId
                 };
             }
             

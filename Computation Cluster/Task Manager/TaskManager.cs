@@ -38,7 +38,8 @@ namespace Task_Manager
         private Queue<SolutionsMessage> partialSolutionsMessageQueue;
         public List<TaskSolver> TaskSolvers { get; set; }
         private ulong problemId;
-        private object problemIdLock;
+        private object problemIdLock = new object();
+        private int threadSleepTimeout;
 
         public TaskManager(string serverIp, int serverPort, int receiveDataTimeout, int threadSleepTimeout)
         {
@@ -46,7 +47,7 @@ namespace Task_Manager
             startTime = DateTime.Now;
             divideProblemMessageQueue = new Queue<DivideProblemMessage>();
             partialSolutionsMessageQueue = new Queue<SolutionsMessage>();
-            Timeout = new TimeSpan(0, 0, 0, threadSleepTimeout);
+            this.threadSleepTimeout = threadSleepTimeout;
         }
 
         public void Start()
@@ -103,7 +104,7 @@ namespace Task_Manager
                 ProcessDivideProblem();
 
                 ProcessPartialSolutions();
-                Thread.Sleep(Timeout);
+                Thread.Sleep(threadSleepTimeout);
             }
         }
 
@@ -225,7 +226,7 @@ namespace Task_Manager
                 if(!String.IsNullOrEmpty(receivedMessage))
                     ProcessMessage(receivedMessage);
 
-                Thread.Sleep((int)(0.8f * Timeout.TotalMilliseconds));
+                Thread.Sleep(threadSleepTimeout);
             }
         }
 
