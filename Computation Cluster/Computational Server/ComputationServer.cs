@@ -41,7 +41,6 @@ namespace Computational_Server
         private ulong solutionId;
         private object solutionIdLock = new object();
         MethodInfo serializeMessageMethod;
-        
 
         public ComputationServer(TimeSpan nodeTimeout, ICommunicationModule communicationModule, int threadSleepTime)
         {

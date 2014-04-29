@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Configuration;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -104,7 +105,7 @@ namespace Communication_Library
             // Establishes a connection to a remote host 
             socket.Connect(ipEndPoint);
         }
-
+        
         public Socket Accept(Socket socket)
         {
             return socket.Accept();
@@ -128,11 +129,12 @@ namespace Communication_Library
 
         public void SendData(string str, Socket socket)
         {
+            str += "\0";
             // Sends data to a connected Socket. 
             int bytesCount = 0;
             byte[] message = ConvertStringToData(str);
-
-            _logger.Debug("Sending message: " + str);
+            
+            //_logger.Debug("Sending message: " + str);
 
             while (bytesCount != message.Length)
             {
@@ -175,15 +177,28 @@ namespace Communication_Library
             if (bytesRead > 0)
             {
                 // There  might be more data, so store the data received so far.
-                state.sb.Append(Encoding.UTF8.GetString(
+                state.sb.Append(Encoding.ASCII.GetString(
                     state.buffer, 0, bytesRead));
 
                 // Check for end-of-file tag. If it is not there, read 
                 // more data.
                 content = state.sb.ToString();
-                _logger.Debug(String.Format("Read {0} bytes from socket. \n Data : {1}",
-                    content.Length, content));
-                receiveDone.Set();
+
+                if (content.IndexOf("\0") > -1)
+                {
+                    // All the data has been read from the 
+                    // client. Display it on the console.
+                    _logger.Debug(String.Format("Read {0} bytes from socket. \n Data : {1}",
+                        content.Length, content));
+                    // Echo the data back to the client.
+                    receiveDone.Set();
+                }
+                else
+                {
+                    // Not all data received. Get more.
+                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
+                    new AsyncCallback(ReadCallback), state);
+                }
             }
         }
 
@@ -191,11 +206,8 @@ namespace Communication_Library
         {
             if (bytesRead > 0)
             {
-                var message = Encoding.UTF8.GetString(buffer, 0,
+                return Encoding.UTF8.GetString(buffer, 0,
                         bytesRead);
-                message = message.Replace("\0", String.Empty);
-                message = message.Trim();
-                return message;
             }
             return String.Empty;
         }
@@ -215,9 +227,9 @@ namespace Communication_Library
             // Client  socket.
             public Socket workSocket = null;
             // Size of receive buffer.
-            public const int BufferSize = 1000 * 1024;
+            public const int BufferSize = 1024 * 100000;
             // Receive buffer.
-            public byte[] buffer = new byte[1000 * 1024];
+            public byte[] buffer = new byte[1024 * 100000];
             // Received data string.
             public StringBuilder sb = new StringBuilder();
         }
