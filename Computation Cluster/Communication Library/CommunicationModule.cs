@@ -193,8 +193,8 @@ namespace Communication_Library
             {
                 var message = Encoding.UTF8.GetString(buffer, 0,
                         bytesRead);
-                message = message.Replace("\0", String.Empty);
-                message = message.Trim();
+                //message = message.Replace("\0", String.Empty);
+                //message = message.Trim();
                 return message;
             }
             return String.Empty;

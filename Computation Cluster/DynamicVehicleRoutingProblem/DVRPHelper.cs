@@ -12,7 +12,7 @@ namespace DynamicVehicleRoutingProblem
         {
             double dx = l1.x - l2.x;
             double dy = l1.y - l2.y;
-            double dist = Math.Sqrt(dx * dx - dy * dy);
+            double dist = Math.Sqrt(dx * dx + dy * dy);
             return dist;
         }
     }

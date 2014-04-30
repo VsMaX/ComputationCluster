@@ -40,7 +40,7 @@ namespace DynamicVehicleRoutingProblem
                     tab = new int[subsets.Count() - size * i][][];
                     size = tab.Count();
                 }
-                int ind =0;
+                int ind = 0;
                 for (int j = (i - 1) * size; j < i * size; j++, ind++)
                 {
                     tab[ind] = new int[subsets[j].Length][];
@@ -83,6 +83,8 @@ namespace DynamicVehicleRoutingProblem
             double bestPathLength = Double.MaxValue;
             List<Location>[] actualSol = new List<Location>[0];
             List<Location>[] bestSol = new List<Location>[0];
+            int setindex;
+            int pathindex;
             for (int set = 0; set < partial.Length; set++)
             {
                 double actualPathLength = 0;
@@ -93,20 +95,31 @@ namespace DynamicVehicleRoutingProblem
 
                     tsp.FindCycle(0, 0, 0, 0, 0);//this.Dvrp.Capacities);
 
-                    if(tsp.best_cycle != null)
-                        actualSol[path]= new List<Location>(tsp.best_cycle);
+                    if (tsp.best_cycle != null)
+                        actualSol[path] = new List<Location>(tsp.best_cycle);
                     actualPathLength += tsp.best;
+                    pathindex = path;
                 }
                 if (actualPathLength < bestPathLength)
                 {
                     bestPathLength = actualPathLength;
                     bestSol = new List<Location>[actualSol.Length];
                     for (int i = 0; i < actualSol.Length; i++)
+                    {
                         bestSol[i] = new List<Location>(actualSol[i]);
+                    }
+                    setindex = set;
+
                 }
             }
             Trace.WriteLine(bestPathLength.ToString());
-            return partialData;
+            double dl = 0;
+            for (int i = 0; i < bestSol.Length; i++)
+                for (int j = 1; j < bestSol[i].Count; j++)
+                {
+                    dl += DVRPHelper.Distance(bestSol[i][j - 1], bestSol[i][j]);
+                }
+            return CommunicationModule.ConvertStringToData(bestPathLength.ToString());
         }
 
         #region PARTITION OF PROBLEM
@@ -165,7 +178,7 @@ namespace DynamicVehicleRoutingProblem
 
     public class Backtracking
     {
-        public double ca;
+        //public double ca;
         public int[] clientsId; // INDEKSY TABLICOWE
         //private byte[] partialData;
         public List<Location> act_cycle;
@@ -173,6 +186,7 @@ namespace DynamicVehicleRoutingProblem
         public bool[] used;
         public double best = Double.MaxValue;
         public DVRP dvrp;
+        public double cutOff = 0.5;
         //public int ilosc_sciezek;
         public int kk;
 
@@ -184,39 +198,27 @@ namespace DynamicVehicleRoutingProblem
             this.clientsId = partialData;
             this.dvrp = dvrp;
             used = new bool[partialData.Length];
-            ca = dvrp.Capacities;
+            //ca = dvrp.Capacities;
             kk = partialData.Length;
         }
 
-        public void FindCycle(int v, int k, double d,double time, double capacity)
+        public void FindCycle(int v, int k, double d, double time, double capacity)
         {
-            if (d >= best || capacity < 0 || time > dvrp.Depots[0].end) { return; }
-            if (capacity == 0)
-            {
-                capacity = dvrp.Capacities;
-                act_cycle.Add(dvrp.Locations[dvrp.Depots[0].locationID]);
-                kk++;
-                double dist = dvrp.distances[v, dvrp.Locations[dvrp.Depots[0].locationID].locationID];
-                double t = dist / dvrp.Speed; 
-                FindCycle(0, k + 1, d + dist, time+t,capacity);
-                capacity -= 100;
-                kk--;
-                //act_cycle..Remove(result.Locations[result.Depots[0].locationID]);
-                act_cycle.RemoveAt(k);
-                return;
-            }
+            if (d >= best || time > dvrp.Depots[0].end) { return; }//|| time > dvrp.Depots[0].end
             if (k == kk)
             {
                 double distToDepot = DVRPHelper.Distance(act_cycle[act_cycle.Count - 1], act_cycle[0]);
 
-                if (d +distToDepot < best)
+                if (d + distToDepot < best)
                 {
-                    best = d +distToDepot;
+                    best = d + distToDepot;
                     act_cycle.Add(dvrp.Locations[dvrp.Depots[0].locationID]);
                     best_cycle = new List<Location>(act_cycle);
+                    act_cycle.RemoveAt(act_cycle.Count - 1);
                 }
                 return;
             }
+
 
             for (int i = 0; i < clientsId.Length; i++)
             {
@@ -224,18 +226,59 @@ namespace DynamicVehicleRoutingProblem
                 {
                     used[i] = true;
 
-                    //if (act_cycle.Count > k)
-                    //    act_cycle[k] = result.Locations[result.Clients[clientsId[i]].locationID];
-                    //else
-                    act_cycle.Add(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID]);
+                    if (capacity + dvrp.Clients[clientsId[i]].size > 0)
+                    {
+                        double dist = dvrp.distances[v, dvrp.Clients[clientsId[i]].locationID];
+                        double t = dist / dvrp.Speed + dvrp.Clients[clientsId[i]].unld;
+                        double tWait = 0;//czas oczekiwania na przyjscie zgłoszenia
+                        if (dvrp.Clients[clientsId[i]].time < cutOff * dvrp.Depots[0].end && time < dvrp.Clients[clientsId[i]].time)
+                            tWait = dvrp.Clients[clientsId[i]].time - time;
+                        act_cycle.Add(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID]);
+                        FindCycle(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID].locationID, k + 1, d + dist, time + t + tWait, capacity + dvrp.Clients[clientsId[i]].size);
+                        act_cycle.RemoveAt(act_cycle.Count - 1);
+                    }
+                    else if (capacity + dvrp.Clients[clientsId[i]].size == 0)
+                    {
+                        double dist = dvrp.distances[v, dvrp.Clients[clientsId[i]].locationID];
+                        dist += dvrp.distances[dvrp.Clients[clientsId[i]].locationID, dvrp.Depots[0].locationID];
+                        double t = dist / dvrp.Speed + dvrp.Clients[clientsId[i]].unld;
+                        double tWait = 0;//czas oczekiwania na przyjscie zgłoszenia
+                        if (dvrp.Clients[clientsId[i]].time < cutOff * dvrp.Depots[0].end && time < dvrp.Clients[clientsId[i]].time)
+                            tWait = dvrp.Clients[clientsId[i]].time - time;
+                        act_cycle.Add(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID]);
+                        act_cycle.Add(dvrp.Locations[dvrp.Depots[0].locationID]);
+                        kk++;
+                        FindCycle(0, k + 2, d + dist, time + t + tWait, dvrp.Capacities);
+                        kk--;
+                        act_cycle.RemoveAt(act_cycle.Count - 1);
+                        act_cycle.RemoveAt(act_cycle.Count - 1);
+                    }
+                    else
+                    {
+                        double dist = 0;
+                        if (act_cycle.Count > 0)
+                        {
+                            dist = dvrp.distances[act_cycle[act_cycle.Count - 1].locationID, dvrp.Depots[0].locationID];
+                        }
+                        dist += dvrp.distances[dvrp.Depots[0].locationID, dvrp.Clients[clientsId[i]].locationID];
 
-                    double dist = dvrp.distances[v, dvrp.Locations[dvrp.Clients[clientsId[i]].locationID].locationID];
-                    double t = dist / dvrp.Speed + dvrp.Clients[clientsId[i]].unld;
-                    capacity += dvrp.Clients[i].size;
-                    FindCycle(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID].locationID, k + 1, d + dist, time + t, capacity);
+                        double t = dist / dvrp.Speed;
+                        double tWait = 0;//czas oczekiwania na przyjscie zgłoszenia
+                        if (dvrp.Clients[clientsId[i]].time < cutOff * dvrp.Depots[0].end && time < dvrp.Clients[clientsId[i]].time)
+                            tWait = dvrp.Clients[clientsId[i]].time - time;
+                        act_cycle.Add(dvrp.Locations[dvrp.Depots[0].locationID]);
+                        kk++;
+                        act_cycle.Add(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID]);
+                        //act_cycle.Insert(act_cycle.Count - 1, dvrp.Locations[dvrp.Depots[0].locationID]);
+
+                        FindCycle(dvrp.Clients[clientsId[i]].locationID, k + 2, d + dist, time + t + tWait, dvrp.Capacities + dvrp.Clients[clientsId[i]].size);
+                        kk--;
+                        act_cycle.RemoveAt(act_cycle.Count - 1);
+                        act_cycle.RemoveAt(act_cycle.Count - 1);
+                    }
                     used[i] = false;
-                    capacity -= dvrp.Clients[i].size;
-                    act_cycle.Remove(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID]);
+                    //capacity -= dvrp.Clients[i].size;
+                    //act_cycle.Remove(dvrp.Locations[dvrp.Clients[clientsId[i]].locationID]);
                 }
             }
         }
