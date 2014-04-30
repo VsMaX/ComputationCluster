@@ -18,7 +18,7 @@ namespace DynamicVehicleRoutingProblem
             : base(problemData)
         {
             this._problemData = problemData;
-            this.Dvrp = DVRP.Parse(CommunicationModule.ConvertDataToString(problemData, problemData.Length));
+            this.Dvrp = DVRPHelper.Parse(CommunicationModule.ConvertDataToString(problemData, problemData.Length));
         }
 
         public override byte[][] DivideProblem(int threadCount)
@@ -79,7 +79,7 @@ namespace DynamicVehicleRoutingProblem
 
         public override byte[] Solve(byte[] partialData, TimeSpan timeout)
         {
-            int[][][] partial = DVRP.ParseData(partialData);
+            int[][][] partial = DVRPHelper.ParsePartialProblemData(partialData);
             double bestPathLength = Double.MaxValue;
             List<Location>[] actualSol = new List<Location>[0];
             List<Location>[] bestSol = new List<Location>[0];

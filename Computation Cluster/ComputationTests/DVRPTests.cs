@@ -64,7 +64,7 @@ namespace ComputationTests
         public void DVRPParseTest1()
         {
             string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
-            DVRP result = DVRP.Parse(testData);
+            DVRP result = DVRPHelper.Parse(testData);
             
             DVRP model = new DVRP();
             model.FormatVersionNumber="okul12a";

@@ -24,8 +24,8 @@ namespace ComputationTests
             TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
             byte[][] result = taskSolver.DivideProblem(10);
             string fistNodeText = System.IO.File.ReadAllText(@"DVRPTestData\AllTxtFiles.txt");
-            int[][][] firstNodeTab = DVRP.ParseData(CommunicationModule.ConvertStringToData(fistNodeText));
-            int[][][] firstNodeTest = DVRP.ParseData(result[0]);
+            int[][][] firstNodeTab = DVRPHelper.ParsePartialProblemData(CommunicationModule.ConvertStringToData(fistNodeText));
+            int[][][] firstNodeTest = DVRPHelper.ParsePartialProblemData(result[0]);
 
             bool ok = true;
             string msg = "";
@@ -90,7 +90,7 @@ namespace ComputationTests
             byte[][] result = taskSolver.DivideProblem(10);
             for (int i = 0; i <=9; i++)
             {
-                int[][][] partialData = DVRP.ParseData(result[i]);
+                int[][][] partialData = DVRPHelper.ParsePartialProblemData(result[i]);
                 taskSolver.Solve(result[i], new TimeSpan());
             }
 
