@@ -16,7 +16,7 @@ namespace DynamicVehicleRoutingProblem
             return dist;
         }
 
-        private static string[] SplitText(string text)
+        public static string[] SplitText(string text)
         {
             string[] splitedText = text.Split(new Char[] { ' ', ':', '\t' });
             char[] charsToTrim = { '\r', ' ' };
