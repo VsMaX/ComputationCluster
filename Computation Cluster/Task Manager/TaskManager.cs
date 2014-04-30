@@ -23,7 +23,6 @@ namespace Task_Manager
         private int serverPort;
         private string serverIp;
         private ICommunicationModule communicationModule;
-        public TSP tsp;
         public ulong NodeId { get; set; }
         public TimeSpan Timeout { get; set; }
         public int NumberOfThreads { get; set; }
@@ -151,9 +150,11 @@ namespace Task_Manager
             
             _logger.Debug("Processing divideMessage. " + processedMessage.Id);
 
-            TaskSolver taskSolver = CreateTaskSolver(processedMessage.ProblemType, processedMessage.Data);
+            TaskSolverDVRP taskSolver = CreateTaskSolver(processedMessage.ProblemType, processedMessage.Data);
 
-            var dividedProblem = taskSolver.DivideProblem((int)processedMessage.ComputationalNodes);
+            var dividedProblem = taskSolver.DivideProblem(5);
+
+            _logger.Debug("Finished dividing problem");
 
             var problemId = GetProblemId();
 
@@ -175,10 +176,10 @@ namespace Task_Manager
                     TaskId = (ulong)i
                 };
             }
-
             var socket = communicationModule.SetupClient();
             communicationModule.Connect(socket);
             var message = SerializeMessage(solutionsMessage);
+            _logger.Debug("Sending " + message.Length +" bytes");
             communicationModule.SendData(message, socket);
             communicationModule.CloseSocket(socket);
         }
@@ -195,7 +196,7 @@ namespace Task_Manager
             return problemIdTmp;
         }
 
-        private TaskSolver CreateTaskSolver(string problemType, byte[] data)
+        private TaskSolverDVRP CreateTaskSolver(string problemType, byte[] data)
         {
             return new TaskSolverDVRP(data);
         }

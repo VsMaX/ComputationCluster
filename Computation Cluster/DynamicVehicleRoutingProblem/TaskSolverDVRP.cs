@@ -9,7 +9,7 @@ using UCCTaskSolver;
 
 namespace DynamicVehicleRoutingProblem
 {
-    //[MethodBoundary]
+
     public class TaskSolverDVRP : TaskSolver
     {
         private DVRP Dvrp;

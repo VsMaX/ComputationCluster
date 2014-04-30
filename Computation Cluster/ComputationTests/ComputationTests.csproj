@@ -39,8 +39,9 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Xml" />
-    <Reference Include="UCCTaskSolver">
-      <HintPath>..\..\..\..\..\..\..\..\..\Desktop\UCCv1.1\UCCTaskSolver.dll</HintPath>
+    <Reference Include="UCCTaskSolver, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\lib\UCCTaskSolver.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Choose>
