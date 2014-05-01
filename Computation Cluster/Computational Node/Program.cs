@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Computational_Node
@@ -11,18 +12,16 @@ namespace Computational_Node
         static void Main(string[] args)
         {
             var node = new ComputationnalNode("127.0.0.1", 5555, 5000);
-            Console.WriteLine("Press S to send status message");
-            var key = Console.ReadKey();
-            switch (key.Key)
+            if (node.RegisterAtServer())
             {
-                case ConsoleKey.S:
-                    node.SendStatus();
-                    break;
-                default:
-                    
-                    break;
+                node.StartQueueProcessingThread();
+                node.StartSendingStatusThread();
             }
-            Console.ReadKey();
+
+            while (true)
+            {
+                Thread.Sleep(1000);
+            }
         }
     }
 }

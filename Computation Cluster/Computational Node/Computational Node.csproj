@@ -46,6 +46,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="UCCTaskSolver">
+      <HintPath>..\..\..\..\UCCv.1.1\UCCv1.1\UCCTaskSolver.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ComputationalNode.cs" />
@@ -60,6 +63,10 @@
     <ProjectReference Include="..\Communication Library\Communication Library.csproj">
       <Project>{B4EFF6FE-DB52-4ECD-AC63-BEE465E5BB66}</Project>
       <Name>Communication Library</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DynamicVehicleRoutingProblem\DynamicVehicleRoutingProblem.csproj">
+      <Project>{2dd11613-1976-491d-a777-b47fa80b91f4}</Project>
+      <Name>DynamicVehicleRoutingProblem</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

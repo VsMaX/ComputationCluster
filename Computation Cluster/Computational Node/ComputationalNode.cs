@@ -8,177 +8,309 @@ using System.Text;
 using System.Threading.Tasks;
 using Communication_Library;
 using System.Threading;
+using DynamicVehicleRoutingProblem;
 
 namespace Computational_Node
 {
     public class ComputationnalNode : BaseNode
     {
-        private Thread listeningThread;
-        private Thread processingThread;
-        private CancellationTokenSource listeningThreadCancellationTokenSource;
-        private CancellationTokenSource processingThreadCancellationToken;
+        private Thread sendingStatusThread;
+        private CancellationTokenSource sendingStatusThreadCancellationTokenSource;
 
-        private int serverPort;
-        private string serverIp;
+        private Thread processingQueueThread;
+        private CancellationTokenSource processingThreadCancellationTokenSource;
+
+        private Queue<PartialProblemsMessage> partialProblemsQueue;
+        private Queue<SolutionsMessage> partialSolutionsQueue;
+
+        private StatusThread[] statusOfComputingThreads;
+        private Thread[] computingThreads;
+        private byte numberOfComputingThreads = 4;
+        private string[] problemType = { "DVRP", "TSP" };
+
         private CommunicationModule communicationModule;
-
-        public ulong NodeId { get; set; }
-        public TimeSpan Timeout { get; set; }
+        private ulong NodeId { get; set; }
+        private TimeSpan Timeout { get; set; }
         private Socket socket;
+
+        private List<SolutionsMessage> solutionsMessages;
 
         public ComputationnalNode(string serverIp, int serverPort, int timeout)
         {
-            communicationModule = new CommunicationModule(serverIp, serverPort, timeout);
-            RegisterAtServer();
+            this.communicationModule = new CommunicationModule(serverIp, serverPort, timeout);
+            this.CreateProcessingThreads();
+            this.partialProblemsQueue = new Queue<PartialProblemsMessage>();
+            this.partialSolutionsQueue = new Queue<SolutionsMessage>();
+
+            this.solutionsMessages = new List<SolutionsMessage>();
         }
 
-        public void RegisterAtServer()
+        private void CreateProcessingThreads()
         {
-
-            this.StartListeningThread();
-
-            socket = communicationModule.SetupClient();
-            communicationModule.Connect(socket);
-
-            this.Register();
-            this.SendStatus();
-
-            //var registerMessage = new RegisterMessage()
-            //{
-            //    ParallelThreads = 8,
-            //    SolvableProblems = new string[] { "TSP" },
-            //    Type = RegisterType.ComputationalNode
-            //};
-            //var messageString = SerializeMessage(registerMessage);
-            ////var messageBytes = CommunicationModule.ConvertStringToData(messageString);
-            //communicationModule.SendData(messageString, socket);
-
-            //var response = communicationModule.ReceiveData(socket);
-            //Trace.WriteLine("Response: " + response.ToString());
-            //var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
-            //Trace.WriteLine("Response has been deserialized");
-            //NodeId = deserializedResponse.Id;
-            //Timeout = deserializedResponse.TimeoutTimeSpan;
-
-            //var statusMessage = new StatusMessage() { };
-            //messageString = this.SerializeMessage(statusMessage);
-            //this.communicationModule.SendData(messageString,socket);
-
-            communicationModule.CloseSocket(socket);
-            //this.StartProcessingThread();
-        }
-
-        private void Register()
-        {
-            var registerMessage = new RegisterMessage()
+            this.computingThreads = new Thread[this.numberOfComputingThreads];
+            this.statusOfComputingThreads = new StatusThread[this.numberOfComputingThreads];
+            for (int i = 0; i < this.numberOfComputingThreads; ++i)
             {
-                ParallelThreads = 8,
-                SolvableProblems = new string[] { "TSP" },
-                Type = RegisterType.ComputationalNode
-            };
-            var messageString = SerializeMessage(registerMessage);
-            this.communicationModule.SendData(messageString, socket);
+                this.statusOfComputingThreads[i] = new StatusThread()
+                {
+                    HowLong = 0,
+                    ProblemInstanceId = 0,
+                    ProblemType = String.Empty,
+                    State = StatusThreadState.Idle,
+                    TaskId = 0,
+                    TaskIdSpecified = false
+                };
+            }
         }
 
-        public void SendStatus()
+        public bool RegisterAtServer()
         {
-            var statusMessage = new StatusMessage() { };
-            var messageString = this.SerializeMessage(statusMessage);
-            this.communicationModule.SendData(messageString, socket);
-        }
-
-        private void StartListeningThread()
-        {
-            listeningThreadCancellationTokenSource = new CancellationTokenSource();
-            listeningThread = new Thread(ListeningThread);
-            listeningThread.Start();
-        }
-
-        private void StartProcessingThread()
-        {
-            processingThreadCancellationToken = new CancellationTokenSource();
-            processingThread = new Thread(ProcessingThread);
-            processingThread.Start();
-        }
-
-        private void ListeningThread(object obj)
-        {
+            //Connect to CS
             this.socket = this.communicationModule.SetupClient();
             this.communicationModule.Connect(socket);
-            while (!listeningThreadCancellationTokenSource.IsCancellationRequested)
-            {
-                //var clientSocket = communicationModule.Accept(socket);
-                //Trace.WriteLine("Accepted connection");
+            Trace.WriteLine("Connected to CS");
 
+            //Create RegisterMessage
+            var registerMessage = new RegisterMessage()
+            {
+                ParallelThreads = this.numberOfComputingThreads,
+                SolvableProblems = this.problemType,
+                Type = RegisterType.ComputationalNode
+            };
+
+            //Send RegisterMessage to CS
+            var messageString = SerializeMessage(registerMessage);
+            this.communicationModule.SendData(messageString, socket);
+            Trace.WriteLine("Sent data to CS: " + messageString);
+
+            //Receive RegisterResponseMessage from CS
+            var receivedMessage = this.communicationModule.ReceiveData(socket);
+            Trace.WriteLine("Received data from CS: " + receivedMessage);
+            this.communicationModule.CloseSocket(socket);
+
+            var deserializedMessage = DeserializeMessage<RegisterResponseMessage>(receivedMessage);
+
+            //Register succeed
+            if (deserializedMessage is RegisterResponseMessage)
+            {
+                Trace.WriteLine("Register at CS succeed");
+                this.NodeId = deserializedMessage.Id;
+                this.Timeout = deserializedMessage.TimeoutTimeSpan;
+                return true;
+            }
+
+            //Register failed
+            else
+            {
+                Trace.WriteLine("Register at CS failed");
+                return false;
+            }
+        }
+
+        public void StartSendingStatusThread()
+        {
+            this.sendingStatusThreadCancellationTokenSource = new CancellationTokenSource();
+            this.sendingStatusThread = new Thread(this.SendStatusMessage);
+
+            //Start sending StatusMessage
+            this.sendingStatusThread.Start();
+        }
+
+        public void StartQueueProcessingThread()
+        {
+            this.processingThreadCancellationTokenSource = new CancellationTokenSource();
+            this.processingQueueThread = new Thread(this.ProcessingThread);
+
+            //Start processing PartialProblems Queue
+            this.processingQueueThread.Start();
+        }
+
+        private void SendStatusMessage()
+        {
+            while (!sendingStatusThreadCancellationTokenSource.IsCancellationRequested)
+            {
+                //Connect to CS
+                socket = communicationModule.SetupClient();
+                communicationModule.Connect(socket);
+                Trace.WriteLine("Connected to CS");
+
+                //Create StatusMessage
+                var statusMessage = new StatusMessage()
+                {
+                    Id = this.NodeId,
+                    Threads = this.statusOfComputingThreads
+                };
+
+                //Send StatusMessage to CS
+                var messageString = this.SerializeMessage(statusMessage);
+                this.communicationModule.SendData(messageString, socket);
+                Trace.WriteLine("Sent data to CS: " + messageString);
+
+                //Receive any response from CS
                 var receivedMessage = communicationModule.ReceiveData(socket);
-                Trace.WriteLine("Received data: " + receivedMessage);
 
-                string result = String.Empty;
-                if (!String.IsNullOrEmpty(receivedMessage))
-                    result = ProcessMessage(receivedMessage);
-                Trace.WriteLine("Message processed, response: " + result);
+                //Close connection
+                this.communicationModule.CloseSocket(socket);
 
-                if (!String.IsNullOrEmpty(result))
-                    communicationModule.SendData(result, socket);
-                Trace.WriteLine("Reponse sent ");
+                if (receivedMessage != String.Empty)
+                {
+                    Trace.WriteLine("Received data from CS: " + receivedMessage);
 
-                communicationModule.CloseSocket(socket);
-                Trace.WriteLine("Socket closed");
+                    //Received SolvePartialProblems message from CS
+                    if (GetMessageName(receivedMessage) == "SolvePartialProblems")
+                    {
+                        Trace.WriteLine("SolvePartialProblems message recognized");
+                        this.ProcessSolvePartialProblemsMessage(receivedMessage);
+                    }
+
+                    //Received unrecoginized message from CS
+                    else
+                    {
+                        Trace.WriteLine("Received unrecognized message!");
+                    }
+                }
+                else
+                {
+                    Trace.WriteLine("No received data from CS!");
+                }
+
+                //Sleep for the period of time given by CS
+                Thread.Sleep(this.Timeout);
             }
         }
 
-        private string ProcessMessage(string message)
+        private void ProcessSolvePartialProblemsMessage(string receivedMessage)
         {
-            var messageName = this.GetMessageName(message);
-            Trace.WriteLine("Received " + messageName);
-            switch (messageName)
+            var partialProblemMessage = this.DeserializeMessage<PartialProblemsMessage>(receivedMessage);
+
+            //Add PartialProblem to queue, it will be process by another Thread
+            lock (this.partialProblemsQueue)
             {
-                case "RegisterResponse":
-                    return this.ProcessRegisterResponse(message);
-
-                case "DivideProblem":
-                    return this.ProcessDivideProblem(message);
-
-                default:
-                    Trace.WriteLine("Received another status");
-                    Trace.WriteLine("XML Data: " + message);
-                    break;
+                this.partialProblemsQueue.Enqueue(partialProblemMessage);
+                Trace.WriteLine(partialProblemMessage.Id, "PartialProblem id[{0}] added to queue");
             }
-            return String.Empty;
         }
 
-        private string ProcessDivideProblem(string message)
+        private void ProcessingThread()
         {
-            throw new NotImplementedException();
+            while (!this.processingThreadCancellationTokenSource.IsCancellationRequested)
+            {
+                this.ProcessPartialProblemMessage();
+
+                this.ProcessSolutionsMessage();
+
+                //Sleep for the period of time given by CS
+                Thread.Sleep(this.Timeout);
+            }
         }
 
-        private string ProcessRegisterResponse(string message)
+        private void ProcessPartialProblemMessage()
         {
-            var response = communicationModule.ReceiveData(socket);
-            Trace.WriteLine("Response: " + response.ToString());
-            return response.ToString();
+            PartialProblemsMessage partialProblemMessage = null;
+
+            lock (this.partialProblemsQueue)
+            {
+                //If there is PartialProblem waiting in queue, dequeue
+                if (this.partialProblemsQueue.Count > 0)
+                {
+                    partialProblemMessage = this.partialProblemsQueue.Dequeue();
+                    Trace.WriteLine(partialProblemMessage.Id, "PartialProblem id[{0}] removed from queue");
+
+                    Thread solvePartialProblemThread = new Thread(() => SolvePartialProblem(partialProblemMessage));
+                    solvePartialProblemThread.Start();
+                }
+
+                //If there is NOT PartialProblem waiting in queue, return
+                else
+                {
+                    Trace.WriteLine("No PartialProblem in queue");
+                }
+            }
         }
 
-        private void ProcessingThread(object obj)
+        private void ProcessSolutionsMessage()
         {
-
+            //TODO wysyłanie gotowych solucji do serwera
         }
 
-        //public void SendStatus()
-        //{
-        //    //communicationModule.Connect(socket);
-        //    //var testStatusThread = new StatusThread() {HowLong = 100, TaskId = 1, State = StatusThreadState.Busy, ProblemType = "TSP", ProblemInstanceId = 1, TaskIdSpecified = true};
-        //    //var statusMessage = new StatusMessage()
-        //    //{
-        //    //    Id = NodeId,
-        //    //    Threads = new StatusThread[] { testStatusThread }
-        //    //};
-        //    //var statusMessageString = SerializeMessage(statusMessage);
-        //    //var statusMessageBytes = CommunicationModule.ConvertStringToData(statusMessageString);
-        //    //communicationModule.Connect(socket);
-        //    ////communicationModule.SendData(statusMessageBytes);
-        //    //var statusMessageResponse = communicationModule.ReceiveData(socket);
-        //    //Trace.WriteLine("status response: " + statusMessageResponse);
-        //}
+        private void SolvePartialProblem(PartialProblemsMessage partialProblemMessage)
+        {
+            //All PartialProblems which were sent in single PartialProblemsMessage
+            Queue<SolvePartialProblemsPartialProblem> q = new Queue<SolvePartialProblemsPartialProblem>(partialProblemMessage.PartialProblems);
+
+            TaskSolverDVRP taskSolverDvrp = new TaskSolverDVRP(partialProblemMessage.CommonData);
+
+            SolutionsMessage solutionMessage = new SolutionsMessage()
+                {
+                    CommonData = partialProblemMessage.CommonData,
+                    Id = partialProblemMessage.Id,
+                    ProblemType = partialProblemMessage.ProblemType,
+                    Solutions = new Solution[q.Count]
+                };
+            this.solutionsMessages.Add(solutionMessage);
+
+            int idleThreadIndex;
+            while (q.Count > 0)
+            {
+                lock (this.statusOfComputingThreads)
+                {
+                    //Get index number of the idle thread, which can compute
+                    idleThreadIndex = this.GetIdleThreadIndex();
+                }
+
+                //If there is no idle thread, wait and try again
+                if (idleThreadIndex == -1)
+                {
+                    Thread.Sleep(this.Timeout);
+                    continue;
+                }
+
+                else
+                {
+                    this.statusOfComputingThreads[idleThreadIndex].ProblemInstanceId =
+                        partialProblemMessage.Id;
+
+                    this.statusOfComputingThreads[idleThreadIndex].ProblemType =
+                        partialProblemMessage.ProblemType;
+
+                    this.statusOfComputingThreads[idleThreadIndex].TaskId =
+                        q.First().TaskId;
+
+                    this.computingThreads[idleThreadIndex] = new Thread(() => 
+                        this.Solve(q.Dequeue(), idleThreadIndex, taskSolverDvrp, 
+                        (int)partialProblemMessage.SolvingTimeout));
+
+                    this.computingThreads[idleThreadIndex].Start();
+                }
+            }
+        }
+
+        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout)
+        {
+            //TODO Timer dla wątku do StatusThread.HowLong
+
+            Solution solution = new Solution();
+            solution.Data = taskSolverDvrp.Solve(partialProblem.Data, new TimeSpan(0,0,solvingTimeout));
+
+            //TODO dodawanie dla właściwej SolutionMessage na liście
+        }
+
+        private int GetIdleThreadIndex()
+        {
+            //Find an idle Thread to process partial problem
+            for (int i = 0; i < this.numberOfComputingThreads; ++i)
+            {
+                if (this.statusOfComputingThreads[i].State == StatusThreadState.Idle)
+                {
+                    this.statusOfComputingThreads[i].State = StatusThreadState.Busy;
+                    return i;
+                }
+            }
+
+            //If there is no idle computing thread
+            return -1;
+        }
     }
+
+
 }
