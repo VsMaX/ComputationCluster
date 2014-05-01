@@ -49,5 +49,10 @@ namespace DynamicVehicleRoutingProblem
             else
                 return true;
         }
+
+        public override string ToString()
+        {
+            return this.locationID.ToString();
+        }
     }
 }

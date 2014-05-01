@@ -87,12 +87,14 @@ namespace ComputationTests
             string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
             byte[] problemData = CommunicationModule.ConvertStringToData(testData);
             TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
-            byte[][] result = taskSolver.DivideProblem(10);
+            byte[][] division = taskSolver.DivideProblem(10);
+            byte[][] solutions = new byte[10][];
             for (int i = 0; i <=9; i++)
             {
-                int[][][] partialData = DVRPHelper.ParsePartialProblemData(result[i]);
-                taskSolver.Solve(result[i], new TimeSpan());
+                int[][][] partialData = DVRPHelper.ParsePartialProblemData(division[i]);
+                solutions[i] = taskSolver.Solve(division[i], new TimeSpan());
             }
+            taskSolver.MergeSolution(solutions);
 
 
         }
