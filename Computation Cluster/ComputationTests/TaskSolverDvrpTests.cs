@@ -95,8 +95,9 @@ namespace ComputationTests
                 solutions[i] = taskSolver.Solve(division[i], new TimeSpan());
             }
             taskSolver.MergeSolution(solutions);
+            DVRPSolution finalSol = DVRPSolution.Parse(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
 
-
+            Assert.IsTrue(Math.Abs(finalSol.pathLen - 976) < 1);
         }
     }
 }

@@ -12,6 +12,8 @@ namespace DynamicVehicleRoutingProblem
         public double x;
         public double y;
 
+
+
         public static bool operator ==(Location v1, Location v2)
         {
             if (v1 != null && v2 != null)

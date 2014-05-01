@@ -14,6 +14,11 @@ namespace DynamicVehicleRoutingProblem
 
         public DVRPSolution() { }
 
+        public DVRPSolution(double pathL)
+        {
+            this.pathLen = pathL;
+        }
+
         public DVRPSolution(double pathL, List<Location>[] sol, List<double>[] arrivals)
         {
             this.pathLen = pathL;
@@ -51,7 +56,7 @@ namespace DynamicVehicleRoutingProblem
             DVRPSolution instance = new DVRPSolution();
             var lines = input.Split(new[] { '\n' });
             int ind = 0;
-            for (int i = 0; i < lines.Length; i++)
+            for (int i = 0; i < lines.Length -1; i++)
             {
                 string[] split = DVRPHelper.SplitText(lines[i]);
 

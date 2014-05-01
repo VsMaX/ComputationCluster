@@ -12,7 +12,7 @@ namespace DynamicVehicleRoutingProblem
 
     public class TaskSolverDVRP : TaskSolver
     {
-        private DVRP Dvrp;
+        public DVRP Dvrp;
 
         public TaskSolverDVRP(byte[] problemData)
             : base(problemData)
@@ -23,6 +23,8 @@ namespace DynamicVehicleRoutingProblem
 
         public override byte[][] DivideProblem(int threadCount)
         {
+            this.State = TaskSolverState.Dividing;
+
             var result = new byte[threadCount][];
 
             var subsets = TaskSolverDVRP.GetAllPartitions<int>(Dvrp.ClientID).ToArray();
@@ -33,7 +35,6 @@ namespace DynamicVehicleRoutingProblem
 
             for (int i = 1; i <= threadCount; i++)
             {
-                //Trace.WriteLine("i = " + i.ToString());
                 int[][][] tab = new int[size][][];
                 if (i == threadCount) // ostatni podzial
                 {
@@ -50,8 +51,6 @@ namespace DynamicVehicleRoutingProblem
                         tab[ind][k] = subsets[j][k];
                     }
                 }
-
-                //Trace.Write(Client.ClientsToString(tab));
                 result[i - 1] = CommunicationModule.ConvertStringToData(Client.ClientsToString(tab));
             }
 
@@ -62,10 +61,18 @@ namespace DynamicVehicleRoutingProblem
 
         public override void MergeSolution(byte[][] solutions)
         {
+            this.State = TaskSolverState.Merging;
+
+            DVRPSolution bestSol = new DVRPSolution(Double.MaxValue);
             for (int i = 0; i < solutions.Length; i++)
             {
                 DVRPSolution sol = DVRPSolution.Parse(CommunicationModule.ConvertDataToString(solutions[i], solutions[i].Length), Dvrp);
+                if (sol.pathLen < bestSol.pathLen)
+                {
+                    bestSol = sol;
+                }
             }
+            this.Solution = CommunicationModule.ConvertStringToData(bestSol.ToString());
         }
 
         public override string Name
@@ -82,6 +89,8 @@ namespace DynamicVehicleRoutingProblem
 
         public override byte[] Solve(byte[] partialData, TimeSpan timeout)
         {
+            this.State = TaskSolverState.Solving;
+
             int[][][] partial = DVRPHelper.ParsePartialProblemData(partialData);
             double bestPathLength = Double.MaxValue;
             List<Location>[] actualSol = new List<Location>[0];
