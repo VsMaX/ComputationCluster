@@ -65,7 +65,10 @@ namespace DynamicVehicleRoutingProblem
                     case "SOLUTION":
                         instance.paths = new List<Location>[int.Parse(split[1])];
                         instance.pathsArrivalsTimes = new List<double>[int.Parse(split[1])];
-                        instance.pathLen = double.Parse(split[2]);
+                        if (instance.paths.Length == 0)
+                            instance.pathLen = Double.MaxValue;
+                        else
+                            instance.pathLen = double.Parse(split[2]);
                         break;
                     case "PATH":
                         instance.paths[ind] = new List<Location>();
