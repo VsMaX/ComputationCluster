@@ -230,7 +230,24 @@ namespace Computational_Node
 
         private void ProcessSolutionsMessage()
         {
-            //TODO wysyłanie gotowych solucji do serwera
+            lock(this.partialSolutionsQueue)
+            {
+                if(this.partialSolutionsQueue.Count > 0)
+                {
+                    SolutionsMessage solutionsMessage = this.partialSolutionsQueue.Dequeue();
+
+                    //Connect to CS
+                    socket = communicationModule.SetupClient();
+                    communicationModule.Connect(socket);
+
+                    //Send SolutionsMessage to CS
+                    var messageString = this.SerializeMessage(solutionsMessage);
+                    this.communicationModule.SendData(messageString, socket);
+
+                    //Close connection
+                    this.communicationModule.CloseSocket(socket);
+                }
+            }
         }
 
         private void SolvePartialProblem(PartialProblemsMessage partialProblemMessage)
@@ -245,10 +262,13 @@ namespace Computational_Node
                     CommonData = partialProblemMessage.CommonData,
                     Id = partialProblemMessage.Id,
                     ProblemType = partialProblemMessage.ProblemType,
-                    Solutions = new Solution[q.Count]
+                    Solutions = new Solution[q.Count],
                 };
-            this.solutionsMessages.Add(solutionMessage);
-
+            lock ((this.solutionsMessages))
+            {
+                this.solutionsMessages.Add(solutionMessage);
+            }
+            
             int idleThreadIndex;
             while (q.Count > 0)
             {
@@ -278,21 +298,57 @@ namespace Computational_Node
 
                     this.computingThreads[idleThreadIndex] = new Thread(() => 
                         this.Solve(q.Dequeue(), idleThreadIndex, taskSolverDvrp, 
-                        (int)partialProblemMessage.SolvingTimeout));
+                        (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id));
 
                     this.computingThreads[idleThreadIndex].Start();
                 }
             }
         }
 
-        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout)
+        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id)
         {
             //TODO Timer dla wątku do StatusThread.HowLong
 
-            Solution solution = new Solution();
-            solution.Data = taskSolverDvrp.Solve(partialProblem.Data, new TimeSpan(0,0,solvingTimeout));
+            Solution solution = new Solution()
+                {
+                    ComputationsTime = 0,
+                    Data = null,
+                    TaskId = partialProblem.TaskId,
+                    TaskIdSpecified = (int)partialProblem.TaskId < 0 ? false : true,
+                    TimeoutOccured = false,
+                    Type = SolutionType.Ongoing
+                };
 
-            //TODO dodawanie dla właściwej SolutionMessage na liście
+            //solution.ComputationsTime = 
+            solution.Data = taskSolverDvrp.Solve(partialProblem.Data, new TimeSpan(0,0,solvingTimeout));
+            //solution.TimeoutOccured =
+            solution.Type = SolutionType.Partial;
+
+            lock (this.solutionsMessages)
+            {
+                foreach (var solutionsMessage in this.solutionsMessages)
+                {
+                    if(solutionsMessage.Id == id)
+                    {
+                        for(int i = 0; i < solutionsMessage.Solutions.Length; i++)
+                        {
+                            solutionsMessage.Solutions[i] = solution;
+                        }
+                    }
+                    
+                    lock (partialSolutionsQueue)
+                    {
+                        this.partialSolutionsQueue.Enqueue(solutionsMessage);
+                    }
+                    this.solutionsMessages.Remove(solutionsMessage);
+                }
+            }
+
+            lock (this.statusOfComputingThreads)
+            {
+                this.statusOfComputingThreads[threadNumber].State = StatusThreadState.Idle;
+                this.statusOfComputingThreads[threadNumber].TaskIdSpecified = false;
+            }
         }
 
         private int GetIdleThreadIndex()
