@@ -14,10 +14,12 @@ namespace DynamicVehicleRoutingProblem
         public List<double> pathsArrivalsTimes;
         public List<int> ClientID;
 
+        public int NodeNumber;
         public List<double> PartialPathLen;
         public List<Location>[] PartialPaths;
         public List<double>[] PartialPathsArrivalsTimes;
         public List<int>[] PartialClientID;
+
         public DVRPPartialSolution() { }
 
         public DVRPPartialSolution(double pathL)
@@ -74,9 +76,7 @@ namespace DynamicVehicleRoutingProblem
                         instance.PartialPathsArrivalsTimes = new List<double>[int.Parse(split[1])];
                         instance.PartialPathLen = new List<double>();
                         instance.PartialClientID = new List<int>[int.Parse(split[1])];
-
-                        //instance.PartialClientID = new List<int>[int.Parse(split[1])];
-                       // instance.PartialSetIndex = new List<double>();
+                        instance.NodeNumber = int.Parse(split[2]);
                         break;
                     case "SET":
                         i++;
@@ -89,8 +89,6 @@ namespace DynamicVehicleRoutingProblem
                         ind++;
                         break;
                     case "SOLUTION":
-                        //instance.PartialPaths = new List<Location>[int.Parse(split[1])];
-                        //instance.PartialPathsArrivalsTimes = new List<double>[int.Parse(split[1])];
                         instance.PartialPathLen.Add(Double.Parse(split[2]));
                         break;
                     case "PATH":

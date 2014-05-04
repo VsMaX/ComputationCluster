@@ -105,7 +105,6 @@ namespace DynamicVehicleRoutingProblem
                     for (int j = 0; j < solutions.Length; j++)
                     {
                         for (int k=0; k< ps[j].PartialClientID.Length; k++)
-                        //if (ps[j].PartialClientID == part[i])
                         if (DVRPHelper.CompareArrays(ps[j].PartialClientID[k].ToArray(), part[i]))
                         {
                             if (ps[j].PartialPathLen[k] == -1)
@@ -121,16 +120,6 @@ namespace DynamicVehicleRoutingProblem
                 }
             }
 
-            //DVRPSolution bestSol = new DVRPSolution(Double.MaxValue);
-            //for (int i = 0; i < solutions.Length; i++)
-            //{
-            //    DVRPSolution sol = DVRPSolution.Parse(CommunicationModule.ConvertDataToString(solutions[i], solutions[i].Length), Dvrp);
-            //    if (sol.pathLen < bestSol.pathLen)
-            //    {
-            //        bestSol = sol;
-            //    }
-            //}
-            //this.Solution = CommunicationModule.ConvertStringToData(bestSol.ToString());
         }
 
         public override string Name
@@ -148,12 +137,15 @@ namespace DynamicVehicleRoutingProblem
         public override byte[] Solve(byte[] partialData, TimeSpan timeout)
         {
             this.State = TaskSolverState.Solving;
-            int[][] partial = DVRPHelper.ParsePartialProblemData(partialData);
+            DVRPPartialDataToSolve pd2s = new DVRPPartialDataToSolve();
+
+            pd2s = DVRPPartialDataToSolve.ParsePartialProblemData(partialData);
+
             DVRPPartialSolution solution;
-            string solString = "SOL:" + partial.Length.ToString() + "\n";
-            for (int set = 0; set < partial.Length; set++)
+            string solString = "SOL:" + pd2s.partial.Length.ToString() + ":" + pd2s.NodeNumber + "\n";
+            for (int set = 0; set < pd2s.partial.Length; set++)
             {
-                DVRPPathFinder pathFinder = new DVRPPathFinder(partial[set], this.Dvrp);
+                DVRPPathFinder pathFinder = new DVRPPathFinder(pd2s.partial[set], this.Dvrp);
                 pathFinder.FindCycle(0, 0, 0, 0, 0);
                 if (pathFinder.best_cycle != null)
                     solution = new DVRPPartialSolution(set, pathFinder.bestPathLen, pathFinder.best_cycle, pathFinder.bestArrivalsTimes);
@@ -164,7 +156,7 @@ namespace DynamicVehicleRoutingProblem
                     solution = new DVRPPartialSolution(set, -1, ll, new List<double> { -1 });
                 }
                 solString += solution.ToString();
-                solString += DVRPPartialSolution.ArrayToString(partial[set]);
+                solString += DVRPPartialSolution.ArrayToString(pd2s.partial[set]);
             }
             return CommunicationModule.ConvertStringToData(solString);
         }
