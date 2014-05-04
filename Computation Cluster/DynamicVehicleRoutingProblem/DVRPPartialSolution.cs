@@ -142,6 +142,87 @@ namespace DynamicVehicleRoutingProblem
             }
             return result+"\n";
         }
+
+        internal static string SolutionToString(DVRPPartialSolution solution)
+        {
+
+            string result = "SOLUTION:" + solution.PartialPaths.Length + ":" + solution.pathLen + "\n";
+
+            string locations = "";
+            string times = "";
+            string pathslen = "";
+            for (int i = 0; i < solution.PartialPaths.Length; i++)
+            {
+                locations = "PATH:";// + solution.PartialPathLen[i].ToString();
+
+                for (int j = 0; j < solution.PartialPaths[i].Count(); j++)
+                    locations += solution.PartialPaths[i][j].ToString() + " ";
+                result += locations + "\n";
+
+                times = "TIMES:";
+
+                for (int j = 0; j < solution.PartialPathsArrivalsTimes[i].Count(); j++)
+                    times += solution.PartialPathsArrivalsTimes[i][j].ToString() + " ";
+                result += times + "\n";
+
+                pathslen = "PATHLEN:";// + solution.PartialPathLen[i].ToString();
+                pathslen += solution.PartialPathLen[i].ToString() + " ";
+                result += pathslen + "\n";
+
+            }
+            return result;
+        }
+        public static DVRPPartialSolution Parse2FinalSol(string input, DVRP dvrp)
+        {
+            if (String.IsNullOrWhiteSpace(input)) throw new ArgumentException(input);
+
+            DVRPPartialSolution instance = new DVRPPartialSolution();
+            //instance.ElemCount = new List<int>();
+
+            var lines = input.Split(new[] { '\n' });
+            int ind = 0;
+            for (int i = 0; i < lines.Length - 1; i++)
+            {
+                string[] split = DVRPHelper.SplitText(lines[i]);
+
+                switch (split[0])
+                {
+                    case "SOLUTION":
+                        instance.PartialPaths = new List<Location>[int.Parse(split[1])];
+                        instance.PartialPathsArrivalsTimes = new List<double>[int.Parse(split[1])];
+                        instance.PartialPathLen = new List<double>();
+                        instance.pathLen = double.Parse(split[2]);
+                        break;
+                    case "PATH":
+                        //instance.PartialPathLen.Add(double.Parse(split[1]));
+                        instance.PartialPaths[ind] = new List<Location>();
+                        for (int n = 1; n < split.Length; n++)
+                        {
+                            if (int.Parse(split[n]) != -1)
+                                instance.PartialPaths[ind].Add(dvrp.Locations.First(x => x.locationID == int.Parse(split[n])));
+                            else
+                                instance.PartialPaths[ind].Add(new Location() { locationID = -1 });
+                        }
+                        break;
+                    case "TIMES":
+                        instance.PartialPathsArrivalsTimes[ind] = new List<double>();
+                        for (int n = 1; n < split.Length; n++)
+                        {
+                            instance.PartialPathsArrivalsTimes[ind].Add(double.Parse(split[n]));
+                        }
+                        break;
+                    case "PATHLEN":
+                        for (int n = 1; n < split.Length; n++)
+                        {
+                            instance.PartialPathLen.Add(double.Parse(split[n]));
+                        }
+                        ind++;
+                        break;
+                }
+            }
+            return instance;
+        }
+
     }
 }
 

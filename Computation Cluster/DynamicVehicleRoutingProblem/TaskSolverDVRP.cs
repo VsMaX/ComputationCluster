@@ -166,7 +166,8 @@ namespace DynamicVehicleRoutingProblem
             }
             //DVRPSolution solution  = new DVRPSolution(0, ps[bestsolNode].PartialPathLen[bestsolInd], ps[bestsolNode].PartialPaths[bestsolInd], ps[bestsolNode].PartialPathsArrivalsTimes[bestsolInd]);
             DVRPPartialSolution solution = new DVRPPartialSolution(bestsolNode, bestsolInd, ps, bestLen);
-            this.Solution = CommunicationModule.ConvertStringToData(solution.ToString());
+            string StringSol = DVRPPartialSolution.SolutionToString(solution);
+            this.Solution = CommunicationModule.ConvertStringToData(StringSol);
         }
             //foreach (var part in GetAllPartitions<int>(Dvrp.ClientID))
             //{

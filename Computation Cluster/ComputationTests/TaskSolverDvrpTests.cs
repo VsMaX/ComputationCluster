@@ -129,18 +129,56 @@ namespace ComputationTests
                 solutions[i] = taskSolver.Solve(division[i], new TimeSpan());
             }
             taskSolver.MergeSolution(solutions);
-            //DVRPSolution finalSol = DVRPSolution.Parse(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
-            DVRPPartialSolution finalSol = DVRPPartialSolution.Parse(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
-
+            DVRPPartialSolution finalSol = DVRPPartialSolution.Parse2FinalSol(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
             Assert.IsTrue(Math.Abs(finalSol.pathLen - 976) < 1);
         }
-        
+
         [DeploymentItem(@"DVRPTestData\okul13D.vrp", "DVRPTestData")]
         [TestMethod]
         [Timeout(24000000)]
         public void SolveProblemTest13D()
         {
             string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul13D.vrp");
+            byte[] problemData = CommunicationModule.ConvertStringToData(testData);
+            TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
+            byte[][] division = taskSolver.DivideProblem(5);
+            byte[][] solutions = new byte[5][];
+            for (int i = 0; i <= 4; i++)
+            {
+                int[][] partialData = DVRPHelper.ParsePartialProblemData(division[i]);
+                solutions[i] = taskSolver.Solve(division[i], new TimeSpan());
+            }
+            taskSolver.MergeSolution(solutions);
+            DVRPPartialSolution finalSol = DVRPPartialSolution.Parse2FinalSol(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
+            Assert.IsTrue(Math.Abs(finalSol.pathLen - 1154) < 1);
+        }
+
+        [DeploymentItem(@"DVRPTestData\okul14D.vrp", "DVRPTestData")]
+        [TestMethod]
+        [Timeout(24000000)]
+        public void SolveProblemTest14D()
+        {
+            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul14D.vrp");
+            byte[] problemData = CommunicationModule.ConvertStringToData(testData);
+            TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
+            byte[][] division = taskSolver.DivideProblem(3);
+            byte[][] solutions = new byte[3][];
+            for (int i = 0; i <= 2; i++)
+            {
+                int[][] partialData = DVRPHelper.ParsePartialProblemData(division[i]);
+                solutions[i] = taskSolver.Solve(division[i], new TimeSpan());
+            }
+            taskSolver.MergeSolution(solutions);
+            DVRPPartialSolution finalSol = DVRPPartialSolution.Parse2FinalSol(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
+            Assert.IsTrue(Math.Abs(finalSol.pathLen - 948) < 1);
+        }
+
+        [DeploymentItem(@"DVRPTestData\okul15D.vrp", "DVRPTestData")]
+        [TestMethod]
+        [Timeout(24000000)]
+        public void SolveProblemTest15D()
+        {
+            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul15D.vrp");
             byte[] problemData = CommunicationModule.ConvertStringToData(testData);
             TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
             byte[][] division = taskSolver.DivideProblem(7);
@@ -151,29 +189,48 @@ namespace ComputationTests
                 solutions[i] = taskSolver.Solve(division[i], new TimeSpan());
             }
             taskSolver.MergeSolution(solutions);
-            DVRPSolution finalSol = DVRPSolution.Parse(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
-
-            Assert.IsTrue(Math.Abs(finalSol.pathLen - 1154) < 1);
+            DVRPPartialSolution finalSol = DVRPPartialSolution.Parse2FinalSol(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
+            Assert.IsTrue(Math.Abs(finalSol.pathLen - 1105) < 1);
         }
-        [DeploymentItem(@"DVRPTestData\okul14D.vrp", "DVRPTestData")]
+
+        [DeploymentItem(@"DVRPTestData\okul16D.vrp", "DVRPTestData")]
         [TestMethod]
         [Timeout(24000000)]
-        public void SolveProblemTest14D()
+        public void SolveProblemTest16D()
         {
-            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul14D.vrp");
+            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul16D.vrp");
             byte[] problemData = CommunicationModule.ConvertStringToData(testData);
             TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
-            byte[][] division = taskSolver.DivideProblem(8);
-            byte[][] solutions = new byte[8][];
-            for (int i = 0; i <= 7; i++)
+            byte[][] division = taskSolver.DivideProblem(4);
+            byte[][] solutions = new byte[4][];
+            for (int i = 0; i <= 3; i++)
             {
-                //int[][][] partialData = DVRPHelper.ParsePartialProblemData(division[i]);
+                int[][] partialData = DVRPHelper.ParsePartialProblemData(division[i]);
                 solutions[i] = taskSolver.Solve(division[i], new TimeSpan());
             }
             taskSolver.MergeSolution(solutions);
-            DVRPSolution finalSol = DVRPSolution.Parse(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
+            DVRPPartialSolution finalSol = DVRPPartialSolution.Parse2FinalSol(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
+            Assert.IsTrue(Math.Abs(finalSol.pathLen - 989) < 1);
+        }
 
-            Assert.IsTrue(Math.Abs(finalSol.pathLen - 948) < 1);
+        [DeploymentItem(@"DVRPTestData\okul17D.vrp", "DVRPTestData")]
+        [TestMethod]
+        [Timeout(24000000)]
+        public void SolveProblemTest17D()
+        {
+            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul17D.vrp");
+            byte[] problemData = CommunicationModule.ConvertStringToData(testData);
+            TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
+            byte[][] division = taskSolver.DivideProblem(6);
+            byte[][] solutions = new byte[6][];
+            for (int i = 0; i <= 6; i++)
+            {
+                int[][] partialData = DVRPHelper.ParsePartialProblemData(division[i]);
+                solutions[i] = taskSolver.Solve(division[i], new TimeSpan());
+            }
+            taskSolver.MergeSolution(solutions);
+            DVRPPartialSolution finalSol = DVRPPartialSolution.Parse2FinalSol(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
+            Assert.IsTrue(Math.Abs(finalSol.pathLen - 1089) < 1);
         }
     }
 }
