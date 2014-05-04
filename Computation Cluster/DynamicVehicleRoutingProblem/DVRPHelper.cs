@@ -197,5 +197,17 @@ namespace DynamicVehicleRoutingProblem
 
             return instance;
         }
+
+        internal static bool CompareArrays(int[] p1, int[] p2)
+        {
+            if (p1.Length != p2.Length)
+                return false;
+            for (int i=0; i<p2.Length; i++)
+            {
+                if (p1[i] != p2[i])
+                    return false;
+            }
+            return true;
+        }
     }
 }

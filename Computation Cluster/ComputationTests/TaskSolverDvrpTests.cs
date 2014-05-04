@@ -98,12 +98,12 @@ namespace ComputationTests
 
         //    Assert.IsTrue(Math.Abs(finalSol.pathLen - 976) < 1);
         //}
-        [DeploymentItem(@"DVRPTestData\okul13D.vrp", "DVRPTestData")]
+        [DeploymentItem(@"DVRPTestData\okul12D.vrp", "DVRPTestData")]
         [TestMethod]
         [Timeout(24000000)]
         public void SolveProblemTest13D()
         {
-            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul13D.vrp");
+            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
             byte[] problemData = CommunicationModule.ConvertStringToData(testData);
             TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
             byte[][] division = taskSolver.DivideProblem(7);

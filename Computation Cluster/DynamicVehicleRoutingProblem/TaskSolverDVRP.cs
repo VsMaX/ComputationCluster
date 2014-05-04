@@ -30,31 +30,33 @@ namespace DynamicVehicleRoutingProblem
 
             var subsets = CreateSubsets(Dvrp.ClientID).ToArray(); 
             Trace.WriteLine(subsets.Count().ToString());
-            int size = subsets.Length / threadCount;
+            int size = subsets.Count() / (threadCount -1);
             Trace.WriteLine(size.ToString());
             int[][] res = new int[threadCount][];
             int indeks = 0;
+            int wpisane = 0;
             for (int i = 1; i <= threadCount; i++)
             {
                 int[][] tab = new int[size][];
                 if (i == threadCount) // ostatni podzial
                 {
-                    tab = new int[subsets.Count() - size * i][];
+                    tab = new int[subsets.Count() - size * (i-1)][];
                     size = tab.Count();
                 }
 
                 int ind = 0;
-                for (int j = (i - 1) * size; j < i * size; j++, ind++)
+                for (int j = 0; j < size; j++, ind++)
                 {
-                    tab[ind] = new int[subsets[j].Length];
+                    
+                    tab[ind] = new int[subsets[j+wpisane].Length];
 
-                    for (int k = 0; k < subsets[j].Length; k++)
+                    for (int k = 0; k < subsets[j+wpisane].Length; k++)
                     {
-                        tab[ind] = new int[subsets[j].Length];
-                        tab[ind] = subsets[j];
+                        tab[ind] = new int[subsets[j+wpisane].Length];
+                        tab[ind] = subsets[j+wpisane];
                     }
                 }
-                
+                wpisane += size;
                 result[i - 1] = CommunicationModule.ConvertStringToData(Client.ClientsToString(tab, indeks));
                 indeks++;
             }
@@ -87,13 +89,36 @@ namespace DynamicVehicleRoutingProblem
         {
             this.State = TaskSolverState.Merging;
             Dictionary<List<int>, double> dit = new Dictionary<List<int>, double>();
-
+            DVRPPartialSolution[] ps = new DVRPPartialSolution[solutions.Length];
             for (int i = 0; i < solutions.Length; i++)
             {
-                DVRPPartialSolution ps = DVRPPartialSolution.Parse(CommunicationModule.ConvertDataToString(solutions[i],solutions[i].Length), Dvrp);
-                //dit.Concat(ps.PartialPathLen).ToDictionary(ps.;
-                
+                ps[i] = DVRPPartialSolution.Parse(CommunicationModule.ConvertDataToString(solutions[i],solutions[i].Length), Dvrp);               
+            }
 
+            //var partitions = GetAllPartitions<int>(Dvrp.ClientID);
+            double bestLen = Double.MaxValue;
+            foreach (var part in GetAllPartitions<int>(Dvrp.ClientID))
+            {
+                double len = 0;
+                for (int i = 0; i < part.Length; i++)
+                {
+                    for (int j = 0; j < solutions.Length; j++)
+                    {
+                        for (int k=0; k< ps[j].PartialClientID.Length; k++)
+                        //if (ps[j].PartialClientID == part[i])
+                        if (DVRPHelper.CompareArrays(ps[j].PartialClientID[k].ToArray(), part[i]))
+                        {
+                            if (ps[j].PartialPathLen[k] == -1)
+                                len = Double.MaxValue;
+                            else
+                                len += ps[j].PartialPathLen[k];
+                        }
+                    }
+                }
+                if (len < bestLen)
+                {
+                    bestLen = len;
+                }
             }
 
             //DVRPSolution bestSol = new DVRPSolution(Double.MaxValue);
@@ -139,6 +164,7 @@ namespace DynamicVehicleRoutingProblem
                     solution = new DVRPPartialSolution(set, -1, ll, new List<double> { -1 });
                 }
                 solString += solution.ToString();
+                solString += DVRPPartialSolution.ArrayToString(partial[set]);
             }
             return CommunicationModule.ConvertStringToData(solString);
         }

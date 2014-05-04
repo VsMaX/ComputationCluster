@@ -73,8 +73,20 @@ namespace DynamicVehicleRoutingProblem
                         instance.PartialPaths = new List<Location>[int.Parse(split[1])];
                         instance.PartialPathsArrivalsTimes = new List<double>[int.Parse(split[1])];
                         instance.PartialPathLen = new List<double>();
-                       // instance.PartialSetIndex = new List<double>();
+                        instance.PartialClientID = new List<int>[int.Parse(split[1])];
 
+                        //instance.PartialClientID = new List<int>[int.Parse(split[1])];
+                       // instance.PartialSetIndex = new List<double>();
+                        break;
+                    case "SET":
+                        i++;
+                        split = DVRPHelper.SplitText(lines[i]);
+                        instance.PartialClientID[ind] = new List<int>();
+                        for (int n = 0; n < split.Length; n++)
+                        { 
+                            instance.PartialClientID[ind].Add(int.Parse(split[n]));
+                        }
+                        ind++;
                         break;
                     case "SOLUTION":
                         //instance.PartialPaths = new List<Location>[int.Parse(split[1])];
@@ -97,11 +109,21 @@ namespace DynamicVehicleRoutingProblem
                         {
                             instance.PartialPathsArrivalsTimes[ind].Add(double.Parse(split[n]));
                         }
-                        ind++;
+                        
                         break;
                 }
             }
             return instance;
+        }
+
+        internal static string ArrayToString(int[] p)
+        {
+            string result = "SET:" + p.Length.ToString() + "\n";
+            for (int i = 0; i < p.Length; i++)
+            {
+                result += p[i].ToString() + " ";
+            }
+            return result+"\n";
         }
     }
 }
