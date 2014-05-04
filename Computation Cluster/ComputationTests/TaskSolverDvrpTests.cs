@@ -98,11 +98,51 @@ namespace ComputationTests
 
         //    Assert.IsTrue(Math.Abs(finalSol.pathLen - 976) < 1);
         //}
+        //[DeploymentItem(@"DVRPTestData\okul12D.vrp", "DVRPTestData")]
+        
+        [TestMethod]
+        [Timeout(24000000)]
+        public void GetIndexTest()
+        {
+            var subsets = TaskSolverDVRP.CreateSubsets(new int[10] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 });//.ToArray();
+
+            subsets.Sort(
+                   delegate(int[] tab1, int[] tab2)
+                   {
+                       if (tab1.Length < tab2.Length)
+                           return -1;
+                       else if (tab2.Length < tab1.Length)
+                           return 1;
+                       else
+                       {
+                           for (int i = 0; i < tab1.Length; i++)
+                           {
+                               if (tab1[i] < tab2[i])
+                                   return -1;
+                               else if (tab2[i] < tab1[i])
+                                   return 1;
+                           }
+                           return 0;
+                       }
+                   }
+               );
+            var subsetsArray = subsets.ToArray();
+
+            long[,] comb =DVRPHelper.GetAllCombination(11);
+
+            int wyn = DVRPHelper.GetIndex(subsetsArray[15], comb, 10);
+            Assert.IsTrue(wyn == 15);
+ 
+        }
+        
+        
         [DeploymentItem(@"DVRPTestData\okul12D.vrp", "DVRPTestData")]
         [TestMethod]
         [Timeout(24000000)]
         public void SolveProblemTest13D()
         {
+            var wyn = DVRPHelper.GetAllCombination(13);
+
             string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
             byte[] problemData = CommunicationModule.ConvertStringToData(testData);
             TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);

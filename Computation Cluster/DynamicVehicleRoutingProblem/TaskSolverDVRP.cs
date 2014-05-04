@@ -28,7 +28,30 @@ namespace DynamicVehicleRoutingProblem
 
             var result = new byte[threadCount][];
 
-            var subsets = CreateSubsets(Dvrp.ClientID).ToArray(); 
+            var subsets = CreateSubsets(Dvrp.ClientID);//.ToArray();
+
+            subsets.Sort(
+                   delegate(int[] tab1, int[] tab2)
+                   {
+                       if (tab1.Length < tab2.Length)
+                           return -1;
+                       else if (tab2.Length < tab1.Length)
+                           return 1;
+                       else
+                       {
+                           for (int i = 0; i < tab1.Length; i++)
+                           {
+                               if (tab1[i] < tab2[i])
+                                   return -1;
+                               else if (tab2[i] < tab1[i])
+                                   return 1;
+                           }
+                           return 0;
+                       }
+                   }
+               );
+
+
             Trace.WriteLine(subsets.Count().ToString());
             int size = subsets.Count() / (threadCount -1);
             Trace.WriteLine(size.ToString());
@@ -63,7 +86,7 @@ namespace DynamicVehicleRoutingProblem
 
             return result;
         }
-        List<T[]> CreateSubsets<T>(T[] originalArray)
+        public static List<T[]> CreateSubsets<T>(T[] originalArray)
         {
             List<T[]> subsets = new List<T[]>();
 

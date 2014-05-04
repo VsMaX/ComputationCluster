@@ -16,6 +16,74 @@ namespace DynamicVehicleRoutingProblem
             return dist;
         }
 
+        public static long Factorial(long x)
+        {
+            if (x <= 1)
+                return 1;
+            else
+                return x * Factorial(x - 1);
+        }
+
+        public static long Permutation(long n, long r)
+        {
+            if (r == 0)
+                return 0;
+            if (n == 0)
+                return 0;
+            if ((r >= 0) && (r <= n))
+                return Factorial(n) / Factorial(n - r);
+            else
+                return 0;
+        }
+
+        public static long Combination(long a, long b)
+        {
+            if (a <= 1)
+                return 1;
+
+            return Factorial(a) / (Factorial(b) * Factorial(a - b));
+        }
+
+        public static long[,] GetAllCombination(int n)
+        {
+            long[,] result = new long[n, n];
+            for(int i = 0; i< n;i++)
+                for (int j = 0; j < n; j++)
+                {
+                    result[i, j] = Combination(i, j);
+                }
+            return result;
+        }
+
+        public static int GetIndex(int[] tab, long[,] comb, int n)//, out int node, out int ind)
+        {
+            long index = 0;
+            for (int i = 1; i < tab.Length; i++)
+            {
+                index += comb[n, i]; 
+            }
+
+            if (tab[0] > 0)
+            {
+                for (int j = tab[0] - 1; j >= 0; j--)
+                {
+                    index += comb[n - (j + 1), tab.Length - 1];
+                }
+            }
+
+            for (int i = 1; i < tab.Length; i++)
+            {
+                //int d = tab[i - 1] - tab[i] -1;
+                for (int j = tab[i]-1; j > tab[i - 1]; j--)
+                {
+                    index += comb[n - (j + 1), tab.Length - (i + 1)];
+                }
+ 
+            }
+
+            return (int)index;
+        }
+
         public static string[] SplitText(string text)
         {
             string[] splitedText = text.Split(new Char[] { ' ', ':', '\t' });
