@@ -114,7 +114,6 @@ namespace DynamicVehicleRoutingProblem
         {
             this.State = TaskSolverState.Merging;
 
-            Dictionary<List<int>, double> dit = new Dictionary<List<int>, double>();
             DVRPPartialSolution[] ps = new DVRPPartialSolution[solutions.Length];
 
             for (int i = 0; i < solutions.Length; i++)
@@ -123,21 +122,51 @@ namespace DynamicVehicleRoutingProblem
                 ps[sol.NodeNumber] = sol;
             }
 
-
-            //var partitions = GetAllPartitions<int>(Dvrp.ClientID);
             double bestLen = Double.MaxValue;
+            List<int> bestsolNode = new List<int>();
+            List<int> bestsolInd = new List<int>();
+
+
+
             foreach (var part in GetAllPartitions<int>(Dvrp.ClientID))
             {
                 double len = 0;
+                int node = 0, ind = 0;
+
+                List<int> pomsolNode = new List<int>();
+                List<int> pomsolInd = new List<int>();
+
                 for (int i = 0; i < part.Length; i++)
                 {
 
+                    int index = DVRPHelper.GetIndex(part[i], this.comb,Dvrp.ClientID.Length);
+                    DVRPHelper.GetNodeAndInd(index, ps, out node, out ind);
+
+                    if (ps[node].PartialPathLen[ind] < 0) // sciezka nie istnieje
+                    {
+                        len = Double.MaxValue;
+                        break;
+                    }
+                    else
+                    {
+                        len += ps[node].PartialPathLen[ind];
+                        pomsolNode.Add(node);
+                        pomsolInd.Add(ind);
+
+                        if (len > bestLen)
+                            break;
+                    }
                 }
                 if (len < bestLen)
                 {
                     bestLen = len;
+                    bestsolNode = new List<int>(pomsolNode);
+                    bestsolInd = new List<int>(pomsolInd);
                 }
             }
+            //DVRPSolution solution  = new DVRPSolution(0, ps[bestsolNode].PartialPathLen[bestsolInd], ps[bestsolNode].PartialPaths[bestsolInd], ps[bestsolNode].PartialPathsArrivalsTimes[bestsolInd]);
+            DVRPPartialSolution solution = new DVRPPartialSolution(bestsolNode, bestsolInd, ps, bestLen);
+            this.Solution = CommunicationModule.ConvertStringToData(solution.ToString());
         }
             //foreach (var part in GetAllPartitions<int>(Dvrp.ClientID))
             //{

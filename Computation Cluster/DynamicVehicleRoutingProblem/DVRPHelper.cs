@@ -73,7 +73,6 @@ namespace DynamicVehicleRoutingProblem
 
             for (int i = 1; i < tab.Length; i++)
             {
-                //int d = tab[i - 1] - tab[i] -1;
                 for (int j = tab[i]-1; j > tab[i - 1]; j--)
                 {
                     index += comb[n - (j + 1), tab.Length - (i + 1)];
@@ -82,6 +81,24 @@ namespace DynamicVehicleRoutingProblem
             }
 
             return (int)index;
+        }
+
+        public static void GetNodeAndInd(int index, DVRPPartialSolution[] ps, out int node, out int ind)
+        {
+            node = 0;
+            ind = 0;
+
+            int l = 0;
+            for (int i = 0; i < ps.Length; i++)
+            {
+                if ( index < l + ps[i].ElemCount)
+                {
+                    node = i;
+                    ind = index -l;
+                    break;
+                }
+                l += ps[i].ElemCount;
+            }
         }
 
         public static string[] SplitText(string text)
@@ -266,16 +283,16 @@ namespace DynamicVehicleRoutingProblem
             return instance;
         }
 
-        internal static bool CompareArrays(int[] p1, int[] p2)
-        {
-            if (p1.Length != p2.Length)
-                return false;
-            for (int i=0; i<p2.Length; i++)
-            {
-                if (p1[i] != p2[i])
-                    return false;
-            }
-            return true;
-        }
+        //internal static bool CompareArrays(int[] p1, int[] p2)
+        //{
+        //    if (p1.Length != p2.Length)
+        //        return false;
+        //    for (int i=0; i<p2.Length; i++)
+        //    {
+        //        if (p1[i] != p2[i])
+        //            return false;
+        //    }
+        //    return true;
+        //}
     }
 }

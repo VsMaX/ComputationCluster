@@ -78,28 +78,6 @@ namespace ComputationTests
         //    Assert.IsTrue(ok,msg);
         //}
 
-        //[DeploymentItem(@"DVRPTestData\okul12D.vrp", "DVRPTestData")]
-        //[TestMethod]
-        //[Timeout(24000000)]
-        //public void SolveProblemTest12D()
-        //{
-        //    string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
-        //    byte[] problemData = CommunicationModule.ConvertStringToData(testData);
-        //    TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
-        //    byte[][] division = taskSolver.DivideProblem(10);
-        //    byte[][] solutions = new byte[10][];
-        //    for (int i = 0; i <=9; i++)
-        //    {
-        //        int[][][] partialData = DVRPHelper.ParsePartialProblemData(division[i]);
-        //        solutions[i] = taskSolver.Solve(division[i], new TimeSpan());
-        //    }
-        //    taskSolver.MergeSolution(solutions);
-        //    DVRPSolution finalSol = DVRPSolution.Parse(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
-
-        //    Assert.IsTrue(Math.Abs(finalSol.pathLen - 976) < 1);
-        //}
-        //[DeploymentItem(@"DVRPTestData\okul12D.vrp", "DVRPTestData")]
-        
         [TestMethod]
         [Timeout(24000000)]
         public void GetIndexTest()
@@ -128,22 +106,41 @@ namespace ComputationTests
                );
             var subsetsArray = subsets.ToArray();
 
-            long[,] comb =DVRPHelper.GetAllCombination(11);
+            long[,] comb = DVRPHelper.GetAllCombination(11);
 
             int wyn = DVRPHelper.GetIndex(subsetsArray[15], comb, 10);
             Assert.IsTrue(wyn == 15);
- 
+
+        }
+
+        [DeploymentItem(@"DVRPTestData\okul12D.vrp", "DVRPTestData")]
+        [TestMethod]
+        [Timeout(24000000)]
+        public void SolveProblemTest12D()
+        {
+            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
+            byte[] problemData = CommunicationModule.ConvertStringToData(testData);
+            TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
+            byte[][] division = taskSolver.DivideProblem(10);
+            byte[][] solutions = new byte[10][];
+            for (int i = 0; i <= 9; i++)
+            {
+                int[][] partialData = DVRPHelper.ParsePartialProblemData(division[i]);
+                solutions[i] = taskSolver.Solve(division[i], new TimeSpan());
+            }
+            taskSolver.MergeSolution(solutions);
+            //DVRPSolution finalSol = DVRPSolution.Parse(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
+            DVRPPartialSolution finalSol = DVRPPartialSolution.Parse(CommunicationModule.ConvertDataToString(taskSolver.Solution, taskSolver.Solution.Length), taskSolver.Dvrp);
+
+            Assert.IsTrue(Math.Abs(finalSol.pathLen - 976) < 1);
         }
         
-        
-        [DeploymentItem(@"DVRPTestData\okul12D.vrp", "DVRPTestData")]
+        [DeploymentItem(@"DVRPTestData\okul13D.vrp", "DVRPTestData")]
         [TestMethod]
         [Timeout(24000000)]
         public void SolveProblemTest13D()
         {
-            var wyn = DVRPHelper.GetAllCombination(13);
-
-            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul12D.vrp");
+            string testData = System.IO.File.ReadAllText(@"DVRPTestData\okul13D.vrp");
             byte[] problemData = CommunicationModule.ConvertStringToData(testData);
             TaskSolverDVRP taskSolver = new TaskSolverDVRP(problemData);
             byte[][] division = taskSolver.DivideProblem(7);

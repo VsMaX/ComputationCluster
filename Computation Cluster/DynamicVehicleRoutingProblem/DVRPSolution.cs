@@ -29,6 +29,11 @@ namespace DynamicVehicleRoutingProblem
             this.pathsArrivalsTimes = arrivals;
         }
 
+        public DVRPSolution(List<int> nodes, List<int> ind, DVRPPartialSolution[] ps)
+        {
+ 
+        }
+
         public override string ToString()
         {
             string result = "SOLUTION:" + index + ":" + pathLen + "\n";

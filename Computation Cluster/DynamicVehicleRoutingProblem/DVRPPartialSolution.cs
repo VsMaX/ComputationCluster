@@ -19,6 +19,7 @@ namespace DynamicVehicleRoutingProblem
         public List<Location>[] PartialPaths;
         public List<double>[] PartialPathsArrivalsTimes;
         public List<int>[] PartialClientID;
+        public int ElemCount;
 
         public DVRPPartialSolution() { }
 
@@ -33,6 +34,21 @@ namespace DynamicVehicleRoutingProblem
             this.pathLen = pathL;
             this.paths = sol;
             this.pathsArrivalsTimes = arrivals;
+        }
+
+        public DVRPPartialSolution(List<int> node, List<int> ind, DVRPPartialSolution[] ps, double pathLen) // do ostaecznego rozwiazania
+        {
+            this.pathLen = pathLen;
+            this.PartialPathLen = new List<double>();
+            this.PartialPaths = new List<Location>[node.Count];
+            this.PartialPathsArrivalsTimes = new List<double>[node.Count];
+            for (int i = 0; i < node.Count; i++)
+            {
+                this.PartialPathLen.Add(ps[node[i]].PartialPathLen[ind[i]]);
+                this.PartialPaths[i] = new List<Location>(ps[node[i]].PartialPaths[ind[i]]);
+                this.PartialPathsArrivalsTimes[i] = new List<double>(ps[node[i]].PartialPathsArrivalsTimes[ind[i]]);
+            }
+ 
         }
 
         public override string ToString()
@@ -63,6 +79,8 @@ namespace DynamicVehicleRoutingProblem
             if (String.IsNullOrWhiteSpace(input)) throw new ArgumentException(input);
 
             DVRPPartialSolution instance = new DVRPPartialSolution();
+            //instance.ElemCount = new List<int>();
+
             var lines = input.Split(new[] { '\n' });
             int ind = 0;
             for (int i = 0; i < lines.Length - 1; i++)
@@ -72,6 +90,7 @@ namespace DynamicVehicleRoutingProblem
                 switch (split[0])
                 {
                     case "SOL":
+                        instance.ElemCount = int.Parse(split[1]);
                         instance.PartialPaths = new List<Location>[int.Parse(split[1])];
                         instance.PartialPathsArrivalsTimes = new List<double>[int.Parse(split[1])];
                         instance.PartialPathLen = new List<double>();
