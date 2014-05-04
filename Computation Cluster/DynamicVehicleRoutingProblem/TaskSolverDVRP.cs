@@ -14,12 +14,14 @@ namespace DynamicVehicleRoutingProblem
     public class TaskSolverDVRP : TaskSolver
     {
         public DVRP Dvrp;
+        public long[,] comb;
 
         public TaskSolverDVRP(byte[] problemData)
             : base(problemData)
         {
             this._problemData = problemData;
             this.Dvrp = DVRPHelper.Parse(CommunicationModule.ConvertDataToString(problemData, problemData.Length));
+            this.comb = DVRPHelper.GetAllCombination(Dvrp.ClientID.Length + 1);
         }
 
         public override byte[][] DivideProblem(int threadCount)
@@ -111,12 +113,16 @@ namespace DynamicVehicleRoutingProblem
         public override void MergeSolution(byte[][] solutions)
         {
             this.State = TaskSolverState.Merging;
+
             Dictionary<List<int>, double> dit = new Dictionary<List<int>, double>();
             DVRPPartialSolution[] ps = new DVRPPartialSolution[solutions.Length];
+
             for (int i = 0; i < solutions.Length; i++)
             {
-                ps[i] = DVRPPartialSolution.Parse(CommunicationModule.ConvertDataToString(solutions[i],solutions[i].Length), Dvrp);               
+                DVRPPartialSolution sol = DVRPPartialSolution.Parse(CommunicationModule.ConvertDataToString(solutions[i], solutions[i].Length), Dvrp);
+                ps[sol.NodeNumber] = sol;
             }
+
 
             //var partitions = GetAllPartitions<int>(Dvrp.ClientID);
             double bestLen = Double.MaxValue;
@@ -125,25 +131,38 @@ namespace DynamicVehicleRoutingProblem
                 double len = 0;
                 for (int i = 0; i < part.Length; i++)
                 {
-                    for (int j = 0; j < solutions.Length; j++)
-                    {
-                        for (int k=0; k< ps[j].PartialClientID.Length; k++)
-                        if (DVRPHelper.CompareArrays(ps[j].PartialClientID[k].ToArray(), part[i]))
-                        {
-                            if (ps[j].PartialPathLen[k] == -1)
-                                len = Double.MaxValue;
-                            else
-                                len += ps[j].PartialPathLen[k];
-                        }
-                    }
+
                 }
                 if (len < bestLen)
                 {
                     bestLen = len;
                 }
             }
-
         }
+            //foreach (var part in GetAllPartitions<int>(Dvrp.ClientID))
+            //{
+            //    double len = 0;
+            //    for (int i = 0; i < part.Length; i++)
+            //    {
+            //        for (int j = 0; j < solutions.Length; j++)
+            //        {
+            //            for (int k=0; k< ps[j].PartialClientID.Length; k++)
+            //            if (DVRPHelper.CompareArrays(ps[j].PartialClientID[k].ToArray(), part[i]))
+            //            {
+            //                if (ps[j].PartialPathLen[k] == -1)
+            //                    len = Double.MaxValue;
+            //                else
+            //                    len += ps[j].PartialPathLen[k];
+            //            }
+            //        }
+            //    }
+            //    if (len < bestLen)
+            //    {
+            //        bestLen = len;
+            //    }
+            //}
+
+        
 
         public override string Name
         {
