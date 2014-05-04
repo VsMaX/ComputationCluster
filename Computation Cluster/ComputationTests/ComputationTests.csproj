@@ -91,11 +91,21 @@
     <None Include="DVRPTestData\okul12D.vrp">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="DVRPTestData\okul13D.vrp" />
-    <None Include="DVRPTestData\okul14D.vrp" />
-    <None Include="DVRPTestData\okul15D.vrp" />
-    <None Include="DVRPTestData\okul16D.vrp" />
-    <None Include="DVRPTestData\okul17D.vrp" />
+    <None Include="DVRPTestData\okul13D.vrp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="DVRPTestData\okul14D.vrp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="DVRPTestData\okul15D.vrp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="DVRPTestData\okul16D.vrp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="DVRPTestData\okul17D.vrp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="DVRPTestData\AllTxtFiles.txt">

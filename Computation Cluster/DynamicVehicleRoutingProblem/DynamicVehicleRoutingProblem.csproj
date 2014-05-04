@@ -55,6 +55,7 @@
     <Compile Include="DVRP.cs" />
     <Compile Include="DVRPComparer.cs" />
     <Compile Include="DVRPHelper.cs" />
+    <Compile Include="DVRPPartialSolution.cs" />
     <Compile Include="DVRPPathFinder.cs" />
     <Compile Include="DVRPSolution.cs" />
     <Compile Include="Location.cs" />

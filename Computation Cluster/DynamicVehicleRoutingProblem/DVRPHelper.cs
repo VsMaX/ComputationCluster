@@ -30,14 +30,14 @@ namespace DynamicVehicleRoutingProblem
             return splitList.ToArray();
         }
 
-        public static int[][][] ParsePartialProblemData(byte[] data)
+        public static int[][] ParsePartialProblemData(byte[] data)
         {
-            int[][][] result = new int[0][][];
+            int[][] result = new int[0][];
             string text = Communication_Library.CommunicationModule.ConvertDataToString(data, data.Length);
             string[] lines = text.Split(new[] { '\n' });
 
             int set = 0;
-            int path = 0;
+            int indeks = 0;
             for (int i = 0; i < lines.Length - 1; i++)
             {
                 string[] split = DVRPHelper.SplitText(lines[i]);
@@ -45,21 +45,18 @@ namespace DynamicVehicleRoutingProblem
                 switch (split[0])
                 {
                     case "NUMSETS":
-                        result = new int[int.Parse(split[1])][][];
+                        result = new int[int.Parse(split[1])][];
+                        indeks = int.Parse(split[2]);
                         break;
                     case "SET":
-                        result[set] = new int[int.Parse(split[1])][];
-                        set++;
-                        path = 0;
-                        break;
-                    case "PATH":
-                        result[set - 1][path] = new int[int.Parse(split[1])];
-                        path++;
+                        set = int.Parse(split[1]);
+                        result[set] = new int[int.Parse(split[2])];
+                        //set++;
                         break;
                     default:
                         for (int j = 0; j < split.Length; j++)
                         {
-                            result[set - 1][path - 1][j] = int.Parse(split[j]);
+                            result[set][j] = int.Parse(split[j]);
                         }
                         break;
                 }

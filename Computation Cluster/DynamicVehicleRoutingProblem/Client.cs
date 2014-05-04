@@ -71,38 +71,35 @@ namespace DynamicVehicleRoutingProblem
             return result;
         }
 
-        public static string ClientsToString(int[][][] subsets)
+        public static string ClientsToString(int[][] subsets, int indeks)
         {
             StringBuilder result = new StringBuilder();
             result.Append("NUMSETS:");
             result.Append(subsets.Length);
+            result.Append(":");
+            result.Append(indeks);
             result.Append("\n");
             for (int i = 0; i <subsets.Length; i++)
             {
                 result.Append("SET:");
+                result.Append((i).ToString());
+                result.Append(":");
                 result.Append(subsets[i].Length.ToString());
                 result.Append("\n");
                 for (int j = 0; j < subsets[i].Length; j++)
                 {
-                    result.Append("PATH:");
-                    result.Append(subsets[i][j].Length);
-                    result.Append("\n");
-                    for (int k = 0; k < subsets[i][j].Length; k++)
-                    {
-                        result.Append(subsets[i][j][k].ToString());
-                        result.Append(" "); 
-                    }
-                    //result.Append(subsets[i][j].ToArray() +" ";
-                    result.Append("\n");
+                    result.Append(subsets[i][j].ToString());
+                    result.Append(" "); 
                 }
-                //result.Append("\n"); 
+                result.Append("\n");
             }
             string filename = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             using (StreamWriter outfile = new StreamWriter(filename + @"\AllTxtFiles.txt"))
             {
                 outfile.Write(result.ToString());
             }
-            return result.ToString(); 
+            string re = result.ToString();
+            return result.ToString();
         }
     }
 }

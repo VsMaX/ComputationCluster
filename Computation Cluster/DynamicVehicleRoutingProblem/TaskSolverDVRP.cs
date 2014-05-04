@@ -1,5 +1,6 @@
 ﻿using Communication_Library;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -27,52 +28,84 @@ namespace DynamicVehicleRoutingProblem
 
             var result = new byte[threadCount][];
 
-            var subsets = TaskSolverDVRP.GetAllPartitions<int>(Dvrp.ClientID).ToArray();
+            var subsets = CreateSubsets(Dvrp.ClientID).ToArray(); 
             Trace.WriteLine(subsets.Count().ToString());
-
-            int size = subsets.Count() / threadCount;
+            int size = subsets.Length / threadCount;
             Trace.WriteLine(size.ToString());
-
+            int[][] res = new int[threadCount][];
+            int indeks = 0;
             for (int i = 1; i <= threadCount; i++)
             {
-                int[][][] tab = new int[size][][];
+                int[][] tab = new int[size][];
                 if (i == threadCount) // ostatni podzial
                 {
-                    tab = new int[subsets.Count() - size * i][][];
+                    tab = new int[subsets.Count() - size * i][];
                     size = tab.Count();
                 }
+
                 int ind = 0;
                 for (int j = (i - 1) * size; j < i * size; j++, ind++)
                 {
-                    tab[ind] = new int[subsets[j].Length][];
+                    tab[ind] = new int[subsets[j].Length];
+
                     for (int k = 0; k < subsets[j].Length; k++)
                     {
-                        tab[ind][k] = new int[subsets[j][k].Length];
-                        tab[ind][k] = subsets[j][k];
+                        tab[ind] = new int[subsets[j].Length];
+                        tab[ind] = subsets[j];
                     }
                 }
-                result[i - 1] = CommunicationModule.ConvertStringToData(Client.ClientsToString(tab));
+                
+                result[i - 1] = CommunicationModule.ConvertStringToData(Client.ClientsToString(tab, indeks));
+                indeks++;
             }
 
             return result;
         }
+        List<T[]> CreateSubsets<T>(T[] originalArray)
+        {
+            List<T[]> subsets = new List<T[]>();
 
+            for (int i = 0; i < originalArray.Length; i++)
+            {
+                int subsetCount = subsets.Count;
+                subsets.Add(new T[] { originalArray[i] });
+
+                for (int j = 0; j < subsetCount; j++)
+                {
+                    T[] newSubset = new T[subsets[j].Length + 1];
+                    subsets[j].CopyTo(newSubset, 0);
+                    newSubset[newSubset.Length - 1] = originalArray[i];
+                    subsets.Add(newSubset);
+                }
+            }
+
+            return subsets;
+        }
         public override event UnhandledExceptionEventHandler ErrorOccured;
 
         public override void MergeSolution(byte[][] solutions)
         {
             this.State = TaskSolverState.Merging;
+            Dictionary<List<int>, double> dit = new Dictionary<List<int>, double>();
 
-            DVRPSolution bestSol = new DVRPSolution(Double.MaxValue);
             for (int i = 0; i < solutions.Length; i++)
             {
-                DVRPSolution sol = DVRPSolution.Parse(CommunicationModule.ConvertDataToString(solutions[i], solutions[i].Length), Dvrp);
-                if (sol.pathLen < bestSol.pathLen)
-                {
-                    bestSol = sol;
-                }
+                DVRPPartialSolution ps = DVRPPartialSolution.Parse(CommunicationModule.ConvertDataToString(solutions[i],solutions[i].Length), Dvrp);
+                //dit.Concat(ps.PartialPathLen).ToDictionary(ps.;
+                
+
             }
-            this.Solution = CommunicationModule.ConvertStringToData(bestSol.ToString());
+
+            //DVRPSolution bestSol = new DVRPSolution(Double.MaxValue);
+            //for (int i = 0; i < solutions.Length; i++)
+            //{
+            //    DVRPSolution sol = DVRPSolution.Parse(CommunicationModule.ConvertDataToString(solutions[i], solutions[i].Length), Dvrp);
+            //    if (sol.pathLen < bestSol.pathLen)
+            //    {
+            //        bestSol = sol;
+            //    }
+            //}
+            //this.Solution = CommunicationModule.ConvertStringToData(bestSol.ToString());
         }
 
         public override string Name
@@ -90,54 +123,29 @@ namespace DynamicVehicleRoutingProblem
         public override byte[] Solve(byte[] partialData, TimeSpan timeout)
         {
             this.State = TaskSolverState.Solving;
-
-            int[][][] partial = DVRPHelper.ParsePartialProblemData(partialData);
-            double bestPathLength = Double.MaxValue;
-            List<Location>[] actualSol = new List<Location>[0];
-            List<Location>[] bestSol = new List<Location>[0];
-            List<double>[] arrivalsTimes = new List<double>[0];
-            List<double>[] bestArrivalsTimes = new List<double>[0];
-
+            int[][] partial = DVRPHelper.ParsePartialProblemData(partialData);
+            DVRPPartialSolution solution;
+            string solString = "SOL:" + partial.Length.ToString() + "\n";
             for (int set = 0; set < partial.Length; set++)
             {
-                double actualPathLength = 0;
-                actualSol = new List<Location>[partial[set].Length];
-                arrivalsTimes = new List<double>[partial[set].Length];
-                for (int path = 0; path < partial[set].Length; path++)
+                DVRPPathFinder pathFinder = new DVRPPathFinder(partial[set], this.Dvrp);
+                pathFinder.FindCycle(0, 0, 0, 0, 0);
+                if (pathFinder.best_cycle != null)
+                    solution = new DVRPPartialSolution(set, pathFinder.bestPathLen, pathFinder.best_cycle, pathFinder.bestArrivalsTimes);
+                else
                 {
-                    DVRPPathFinder pathFinder = new DVRPPathFinder(partial[set][path], this.Dvrp);
-
-                    pathFinder.FindCycle(0, 0, 0, 0, 0);
-
-                    if (pathFinder.best_cycle != null)
-                    {
-                        actualSol[path] = new List<Location>(pathFinder.best_cycle);
-                        arrivalsTimes[path] = new List<double>(pathFinder.bestArrivalsTimes);
-                    }
-                    actualPathLength += pathFinder.bestPathLen;
+                    List<Location> ll = new List<Location>();
+                    ll.Add(new Location { locationID = -1 });
+                    solution = new DVRPPartialSolution(set, -1, ll, new List<double> { -1 });
                 }
-                if (actualPathLength < bestPathLength)
-                {
-                    bestPathLength = actualPathLength;
-                    bestSol = new List<Location>[actualSol.Length];
-                    bestArrivalsTimes = new List<double>[actualSol.Length];
-                    for (int i = 0; i < actualSol.Length; i++)
-                    {
-                        bestSol[i] = new List<Location>(actualSol[i]);
-                        bestArrivalsTimes[i] = new List<double>(arrivalsTimes[i]);
-                    }
-
-                }
+                solString += solution.ToString();
             }
-            DVRPSolution solution = new DVRPSolution(bestPathLength, bestSol, bestArrivalsTimes);
-            string solString = solution.ToString();
             return CommunicationModule.ConvertStringToData(solString);
         }
 
         #region PARTITION OF PROBLEM
-        public static IEnumerable<T[][]> GetAllPartitions<T>(T[] elements)
-        {
-            return TaskSolverDVRP.GetAllPartitions(new T[][] { }, elements);
+        public static IEnumerable<T[][]> GetAllPartitions<T>(T[] elements) {
+            return GetAllPartitions(new T[][]{}, elements);
         }
 
         private static IEnumerable<T[][]> GetAllPartitions<T>(
@@ -150,13 +158,11 @@ namespace DynamicVehicleRoutingProblem
             // Get all two-group-partitions of the suffix elements
             // and sub-divide them recursively
             var suffixPartitions = GetTuplePartitions(suffixElements);
-            foreach (Tuple<T[], T[]> suffixPartition in suffixPartitions)
-            {
+            foreach (Tuple<T[], T[]> suffixPartition in suffixPartitions) {
                 var subPartitions = GetAllPartitions(
                     fixedParts.Concat(new[] { suffixPartition.Item1 }).ToArray(),
                     suffixPartition.Item2);
-                foreach (var subPartition in subPartitions)
-                {
+                foreach (var subPartition in subPartitions) {
                     yield return subPartition;
                 }
             }
@@ -169,15 +175,13 @@ namespace DynamicVehicleRoutingProblem
             if (elements.Length < 2) yield break;
 
             // Generate all 2-part partitions
-            for (int pattern = 1; pattern < 1 << (elements.Length - 1); pattern++)
-            {
+            for (int pattern = 1; pattern < 1 << (elements.Length - 1); pattern++) {
                 // Create the two result sets and
                 // assign the first element to the first set
                 List<T>[] resultSets = {
                     new List<T> { elements[0] }, new List<T>() };
                 // Distribute the remaining elements
-                for (int index = 1; index < elements.Length; index++)
-                {
+                for (int index = 1; index < elements.Length; index++) {
                     resultSets[(pattern >> (index - 1)) & 1].Add(elements[index]);
                 }
 
