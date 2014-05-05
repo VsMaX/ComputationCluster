@@ -240,7 +240,7 @@ namespace Task_Manager
                 if(!String.IsNullOrEmpty(receivedMessage))
                     ProcessMessage(receivedMessage);
 
-                Thread.Sleep((int)(threadSleepTimeout * 0.8));
+                Thread.Sleep((int)(threadSleepTimeout*0.8));
             }
         }
 

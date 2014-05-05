@@ -35,6 +35,10 @@ namespace Computational_Node
         private TimeSpan Timeout { get; set; }
         private Socket socket;
 
+        private Socket finalSocket;
+
+        private Socket registerSocket;
+
         private List<SolutionsMessage> solutionsMessages;
 
         public ComputationalNode(string serverIp, int serverPort, int timeout)
@@ -70,8 +74,8 @@ namespace Computational_Node
         public bool RegisterAtServer()
         {
             //Connect to CS
-            this.socket = this.communicationModule.SetupClient();
-            this.communicationModule.Connect(socket);
+            this.registerSocket = this.communicationModule.SetupClient();
+            this.communicationModule.Connect(registerSocket);
             Trace.WriteLine("Connected to CS");
 
             //Create RegisterMessage
@@ -84,13 +88,13 @@ namespace Computational_Node
 
             //Send RegisterMessage to CS
             var messageString = SerializeMessage(registerMessage);
-            this.communicationModule.SendData(messageString, socket);
+            this.communicationModule.SendData(messageString, registerSocket);
             Trace.WriteLine("Sent data to CS: " + messageString);
 
             //Receive RegisterResponseMessage from CS
-            var receivedMessage = this.communicationModule.ReceiveData(socket);
+            var receivedMessage = this.communicationModule.ReceiveData(registerSocket);
             Trace.WriteLine("Received data from CS: " + receivedMessage);
-            this.communicationModule.CloseSocket(socket);
+            this.communicationModule.CloseSocket(registerSocket);
 
             var deserializedMessage = DeserializeMessage<RegisterResponseMessage>(receivedMessage);
 
@@ -191,7 +195,7 @@ namespace Computational_Node
             lock (this.partialProblemsQueue)
             {
                 this.partialProblemsQueue.Enqueue(partialProblemMessage);
-                Trace.WriteLine(partialProblemMessage.Id, "PartialProblem id[{0}] added to queue");
+                Trace.WriteLine( "PartialProblem added to queue");
             }
         }
 
@@ -217,9 +221,10 @@ namespace Computational_Node
                 //If there is PartialProblem waiting in queue, dequeue
                 if (this.partialProblemsQueue.Count > 0)
                 {
+                    Trace.WriteLine("\n\n["+this.partialProblemsQueue.Count +"] problems in queue\n\n");
                     partialProblemMessage = this.partialProblemsQueue.Dequeue();
-                    Trace.WriteLine(partialProblemMessage.Id, "PartialProblem id[{0}] removed from queue");
-                    Trace.WriteLine("Starting solving problem id: " + partialProblemMessage.Id);
+                    Trace.WriteLine("\n\nPartialProblem removed from queue\n\n");
+                    Trace.WriteLine("\n\nStarting solving problem id: " + partialProblemMessage.Id);
                     Thread solvePartialProblemThread = new Thread(() => SolvePartialProblem(partialProblemMessage));
                     solvePartialProblemThread.Start();
                 }
@@ -263,19 +268,22 @@ namespace Computational_Node
                             counter++;
                         }
                     }
+                    Trace.WriteLine("\n\n " + counter + "/" + solutionsMessages[i].Solutions.Length + " subproblems of partialProblem are solved");
 
                     if(counter == solutionsMessages[i].Solutions.Length)
                     {
+                        Trace.WriteLine("\n\n ALL Subproblems of partialProblem ARE solved\n\n");
+
                         //Connect to CS
-                        socket = communicationModule.SetupClient();
-                        communicationModule.Connect(socket);
+                        finalSocket = communicationModule.SetupClient();
+                        communicationModule.Connect(finalSocket);
 
                         //Send SolutionsMessage to CS
                         var messageString = this.SerializeMessage(this.solutionsMessages[i]);
-                        this.communicationModule.SendData(messageString, socket);
+                        this.communicationModule.SendData(messageString, finalSocket);
 
                         //Close connection
-                        this.communicationModule.CloseSocket(socket);
+                        this.communicationModule.CloseSocket(finalSocket);
 
                         this.solutionsMessages.RemoveAt(i);
                     }
@@ -293,6 +301,7 @@ namespace Computational_Node
         {
             //All PartialProblems which were sent in single PartialProblemsMessage
             Queue<SolvePartialProblemsPartialProblem> q = new Queue<SolvePartialProblemsPartialProblem>(partialProblemMessage.PartialProblems);
+            Trace.WriteLine("\n\nSOLVING ["+ q.Count +"]subproblems of PartialProblem\n\n");
 
             TaskSolverDVRP taskSolverDvrp = new TaskSolverDVRP(partialProblemMessage.CommonData);
 
@@ -307,8 +316,9 @@ namespace Computational_Node
             {
                 this.solutionsMessages.Add(solutionMessage);
             }
+
             int idleThreadIndex;
-            int counter = 0;
+
             while (q.Count > 0)
             {
                 lock (this.statusOfComputingThreads)
@@ -339,14 +349,14 @@ namespace Computational_Node
                     var prob = q.Dequeue();
                     this.computingThreads[idleThreadIndex] = new Thread(() => 
                         this.Solve(prob, idleThreadIndex, taskSolverDvrp, 
-                        (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id, prob.TaskId));
+                        (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id));
 
                     this.computingThreads[idleThreadIndex].Start();
                 }
             }
         }
 
-        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id, ulong index)
+        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id)
         {
             //TODO Timer dla wątku do StatusThread.HowLong
 
@@ -360,29 +370,21 @@ namespace Computational_Node
                     Type = SolutionType.Ongoing
                 };
 
+            Trace.WriteLine("\n\nSolving subproblem id " + partialProblem.TaskId +" on thread "+threadNumber+"\n\n");
             //solution.ComputationsTime = 
             solution.Data = taskSolverDvrp.Solve(partialProblem.Data, new TimeSpan(0,0,solvingTimeout));
             //solution.TimeoutOccured =
             solution.Type = SolutionType.Partial;
-            Trace.WriteLine("Solved subproblem id: " + index);
+            Trace.WriteLine("\n\nSolved subproblem id: " + partialProblem.TaskId + "\n\n");
 
             lock (this.solutionsMessages)
             {
                 for (int j = solutionsMessages.Count - 1; j >= 0; j--)
                 {
-                    var solutionsMessage = solutionsMessages[j];
-                    if(solutionsMessage.Id == id)
+                    if (solutionsMessages[j].Id == id)
                     {
-                        var tmp = solutionsMessage.Solutions[index];
-                        for (int i = 0; i < solutionsMessage.Solutions.Count(); i++)
-                        {
-                            if (solutionsMessage.Solutions[i] == null)
-                            {
-                                solutionsMessage.Solutions[i] = solution;
-                                break;
-                            }
-                        }
-
+                        solutionsMessages[j].Solutions[partialProblem.TaskId] = solution;
+                        Trace.WriteLine("\n\n Subproblem id: " + partialProblem.TaskId + " waits for complete solution\n\n");
                         break;
                     }
                     
@@ -393,7 +395,7 @@ namespace Computational_Node
                     //this.solutionsMessages.RemoveAt(j);
                 }
             }
-            _logger.Debug("Solved problem: " + solution.TaskId);
+            //_logger.Debug("Solved problem: " + solution.TaskId);
 
             lock (this.statusOfComputingThreads)
             {

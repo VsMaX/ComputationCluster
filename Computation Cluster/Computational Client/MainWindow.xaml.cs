@@ -28,6 +28,7 @@ namespace Computational_Client
         {
             InitializeComponent();
             this.defaultGrid.DataContext = this.textBoxContent;
+
         }
 
         public SolveRequestMessage solveRequestMessage;
@@ -38,10 +39,9 @@ namespace Computational_Client
 
         public ulong problemId;
 
-        public TextBoxContent textBoxContent = new TextBoxContent()
-            {
-                Content = "potwierdzenie od serwera"
-            };
+        public TextBoxContent textBoxContent = new TextBoxContent() { Content = "potwierdzenie od serwera" };
+
+
 
         private void ButtonSendSolutionRequest_Click(object sender, RoutedEventArgs e)
         {
@@ -56,18 +56,36 @@ namespace Computational_Client
             //potwierdzenie.Text = sr2;
 
             //
+            Thread test = new Thread(new ThreadStart(this.ThreadBackgroundWork));
+            test.Start();
+
+        }
+
+        public delegate void UpdateTextCallback(string message);
+
+        private void UpdateText(string message)
+        {
+            this.potwierdzenie.Text += message;
+        }
+
+        private void ThreadBackgroundWork()
+        {
             SolutionRequestMessage srm = new SolutionRequestMessage()
-                {
-                    Id = this.problemId
-                };
+            {
+                Id = this.problemId
+            };
 
             SolutionsMessage sm = null;
             String message = String.Empty;
+            double len = 0;
 
-            while(sm == null)
+            while (sm == null)
             {
+                //this.potwierdzenie.Text += "\n\nAsking for Final solution... ";
+                string str = "\n\nAsking for Final solution... ";
+                this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] {str});
                 message = this.computationalClient.SendSolutionRequest(srm);
-                if(message != String.Empty)
+                if (message != String.Empty)
                 {
                     switch (bn.GetMessageName(message))
                     {
@@ -78,8 +96,10 @@ namespace Computational_Client
                             {
                                 if (solution.Type == SolutionType.Final)
                                 {
-                                    this.potwierdzenie.Text += "\n\nFinal solution: "
-                                                                   + System.Text.Encoding.UTF8.GetString(solution.Data);
+                                    //str = "\n\nFinal solution: " + System.Text.Encoding.UTF8.GetString(solution.Data);
+                                    len = DynamicVehicleRoutingProblem.DVRPPartialSolution.Parse2FinalSolLenght(System.Text.Encoding.UTF8.GetString(solution.Data));
+                                    this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "\n\n Path lenght: " + len.ToString() });
+                                    this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "\n SOLVED!!! \n SOLVED!!!"});
                                     break;
                                 }
                             }
@@ -93,17 +113,20 @@ namespace Computational_Client
                         default:
                             break;
                     }
+                    if (len != 0) break;
                 }
                 else
                 {
-                    this.potwierdzenie.Text += "\n\n Message empty";
+                    str = "\n\n Message empty";
+                    this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { str });
                 }
-                this.potwierdzenie.Text += "\n\n Computing...";
+                str = "\n\n Computing...";
+                this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { str });
                 Thread.Sleep(10000);
             }
         }
 
-        private void ButtonSendSolveRequest_Click(object sender, RoutedEventArgs e)
+    private void ButtonSendSolveRequest_Click(object sender, RoutedEventArgs e)
         {
             var message = this.computationalClient.SendSolveRequest(this.solveRequestMessage);
             this.potwierdzenie.Text += "\nReceived form CC" + message;

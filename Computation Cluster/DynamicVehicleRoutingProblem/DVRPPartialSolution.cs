@@ -172,6 +172,7 @@ namespace DynamicVehicleRoutingProblem
             }
             return result;
         }
+
         public static DVRPPartialSolution Parse2FinalSol(string input, DVRP dvrp)
         {
             if (String.IsNullOrWhiteSpace(input)) throw new ArgumentException(input);
@@ -221,6 +222,46 @@ namespace DynamicVehicleRoutingProblem
                 }
             }
             return instance;
+        }
+
+        public static double Parse2FinalSolLenght(string input)
+        {
+            if (String.IsNullOrWhiteSpace(input)) throw new ArgumentException(input);
+            DVRPPartialSolution instance = new DVRPPartialSolution();
+            //instance.ElemCount = new List<int>();
+
+            var lines = input.Split(new[] { '\n' });
+            int ind = 0;
+            for (int i = 0; i < lines.Length - 1; i++)
+            {
+                string[] split = DVRPHelper.SplitText(lines[i]);
+
+                switch (split[0])
+                {
+                    case "SOLUTION":
+                        instance.PartialPaths = new List<Location>[int.Parse(split[1])];
+                        instance.PartialPathsArrivalsTimes = new List<double>[int.Parse(split[1])];
+                        instance.PartialPathLen = new List<double>();
+                        instance.pathLen = double.Parse(split[2]);
+                        break;
+                    case "TIMES":
+                        instance.PartialPathsArrivalsTimes[ind] = new List<double>();
+                        for (int n = 1; n < split.Length; n++)
+                        {
+                            instance.PartialPathsArrivalsTimes[ind].Add(double.Parse(split[n]));
+                        }
+                        break;
+                    case "PATHLEN":
+                        for (int n = 1; n < split.Length; n++)
+                        {
+                            instance.PartialPathLen.Add(double.Parse(split[n]));
+                        }
+                        ind++;
+                        break;
+                }
+            }
+
+            return instance.pathLen;
         }
 
     }

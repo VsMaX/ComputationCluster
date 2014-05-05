@@ -60,7 +60,6 @@ namespace Computational_Client
                 communicationModule.SendData(message, clientSocket);
 
                 var response = communicationModule.ReceiveData(clientSocket);
-
                 communicationModule.CloseSocket(clientSocket);
 
                 return response;
