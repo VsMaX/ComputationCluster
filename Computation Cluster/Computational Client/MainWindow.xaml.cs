@@ -60,6 +60,7 @@ namespace Computational_Client
                 {
                     Id = this.problemId
                 };
+
             SolutionsMessage sm = null;
             String message = String.Empty;
 
