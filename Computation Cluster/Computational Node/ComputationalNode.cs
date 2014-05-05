@@ -256,7 +256,7 @@ namespace Computational_Node
 
                     foreach (var solution in solutionsMessages[i].Solutions)
                     {
-                        if(solution != null && solution.Type != SolutionType.Partial)
+                        if(solution != null && solution.Type == SolutionType.Partial)
                         {
                             counter++;
                         }
@@ -281,7 +281,8 @@ namespace Computational_Node
                     {
                         counter = 0;
                     }
-                    
+                    i++;
+
                 }
             }
         }
@@ -334,14 +335,14 @@ namespace Computational_Node
                     var prob = q.Dequeue();
                     this.computingThreads[idleThreadIndex] = new Thread(() => 
                         this.Solve(prob, idleThreadIndex, taskSolverDvrp, 
-                        (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id, counter));
+                        (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id, prob.TaskId));
 
                     this.computingThreads[idleThreadIndex].Start();
                 }
             }
         }
 
-        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id, int index)
+        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id, ulong index)
         {
             //TODO Timer dla wątku do StatusThread.HowLong
 
@@ -368,7 +369,13 @@ namespace Computational_Node
                     var solutionsMessage = solutionsMessages[j];
                     if(solutionsMessage.Id == id)
                     {
-                        solutionsMessage.Solutions[index] = solution;
+                        var tmp = solutionsMessage.Solutions.FirstOrDefault(x => x.TaskId == index);
+                        if (tmp != null)
+                        {
+                            tmp.Data = solution.Data;
+                            tmp.Type = SolutionType.Partial;
+                        }
+
                         break;
                     }
                     
