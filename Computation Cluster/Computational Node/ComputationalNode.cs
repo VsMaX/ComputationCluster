@@ -254,9 +254,10 @@ namespace Computational_Node
                 int counter = 0;
                 while(this.solutionsMessages.Count > 0)
                 {
+
                     foreach (var solution in solutionsMessages[i].Solutions)
                     {
-                        if(solution.Type != SolutionType.Partial)
+                        if(solution != null && solution.Type != SolutionType.Partial)
                         {
                             counter++;
                         }
@@ -306,6 +307,7 @@ namespace Computational_Node
             }
             
             int idleThreadIndex;
+            int counter = 0;
             while (q.Count > 0)
             {
                 lock (this.statusOfComputingThreads)
@@ -333,14 +335,14 @@ namespace Computational_Node
                     var prob = q.Dequeue();
                     this.computingThreads[idleThreadIndex] = new Thread(() => 
                         this.Solve(prob, idleThreadIndex, taskSolverDvrp, 
-                        (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id, q.Peek().TaskId));
+                        (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id, counter));
 
                     this.computingThreads[idleThreadIndex].Start();
                 }
             }
         }
 
-        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id, ulong partialId)
+        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id, int index)
         {
             //TODO Timer dla wątku do StatusThread.HowLong
 
@@ -367,7 +369,7 @@ namespace Computational_Node
                     var solutionsMessage = solutionsMessages[j];
                     if(solutionsMessage.Id == id)
                     {
-                        solutionsMessage.Solutions[partialId] = solution;
+                        solutionsMessage.Solutions[index] = solution;
                         break;
                     }
                     
