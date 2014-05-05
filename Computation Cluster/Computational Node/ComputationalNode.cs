@@ -22,6 +22,7 @@ namespace Computational_Node
 
         private Queue<PartialProblemsMessage> partialProblemsQueue;
         private Queue<SolutionsMessage> partialSolutionsQueue;
+        private Queue<Solution> partialSolutionsQueuePart;
 
         private StatusThread[] statusOfComputingThreads;
         private Thread[] computingThreads;
@@ -41,6 +42,7 @@ namespace Computational_Node
             this.CreateProcessingThreads();
             this.partialProblemsQueue = new Queue<PartialProblemsMessage>();
             this.partialSolutionsQueue = new Queue<SolutionsMessage>();
+            this.partialSolutionsQueuePart = new Queue<Solution>();
 
             this.solutionsMessages = new List<SolutionsMessage>();
         }
@@ -232,20 +234,53 @@ namespace Computational_Node
         {
             lock(this.partialSolutionsQueue)
             {
-                if(this.partialSolutionsQueue.Count > 0)
+                //if(this.partialSolutionsQueue.Count > 0)
+                //{
+                //    SolutionsMessage solutionsMessage = this.partialSolutionsQueue.Dequeue();
+
+                //    //Connect to CS
+                //    socket = communicationModule.SetupClient();
+                //    communicationModule.Connect(socket);
+
+                //    //Send SolutionsMessage to CS
+                //    var messageString = this.SerializeMessage(solutionsMessage);
+                //    this.communicationModule.SendData(messageString, socket);
+
+                //    //Close connection
+                //    this.communicationModule.CloseSocket(socket);
+                //}
+                int i = 0;
+                int counter = 0;
+                while(this.solutionsMessages.Count > 0)
                 {
-                    SolutionsMessage solutionsMessage = this.partialSolutionsQueue.Dequeue();
+                    foreach (var solution in solutionsMessages[i].Solutions)
+                    {
+                        if(solution.Type != SolutionType.Partial)
+                        {
+                            counter++;
+                        }
+                    }
 
-                    //Connect to CS
-                    socket = communicationModule.SetupClient();
-                    communicationModule.Connect(socket);
+                    if(counter == solutionsMessages[i].Solutions.Length)
+                    {
+                        //Connect to CS
+                        socket = communicationModule.SetupClient();
+                        communicationModule.Connect(socket);
 
-                    //Send SolutionsMessage to CS
-                    var messageString = this.SerializeMessage(solutionsMessage);
-                    this.communicationModule.SendData(messageString, socket);
+                        //Send SolutionsMessage to CS
+                        var messageString = this.SerializeMessage(this.solutionsMessages[i]);
+                        this.communicationModule.SendData(messageString, socket);
 
-                    //Close connection
-                    this.communicationModule.CloseSocket(socket);
+                        //Close connection
+                        this.communicationModule.CloseSocket(socket);
+
+                        this.solutionsMessages.RemoveAt(i);
+                    }
+                    else
+                    {
+                        counter = 0;
+                    }
+                    
                 }
             }
         }
@@ -297,14 +332,14 @@ namespace Computational_Node
                     var prob = q.Dequeue();
                     this.computingThreads[idleThreadIndex] = new Thread(() => 
                         this.Solve(prob, idleThreadIndex, taskSolverDvrp, 
-                        (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id));
+                        (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id, q.Peek().TaskId));
 
                     this.computingThreads[idleThreadIndex].Start();
                 }
             }
         }
 
-        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id)
+        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id, ulong partialId)
         {
             //TODO Timer dla wątku do StatusThread.HowLong
 
@@ -331,17 +366,15 @@ namespace Computational_Node
                     var solutionsMessage = solutionsMessages[j];
                     if(solutionsMessage.Id == id)
                     {
-                        for(int i = 0; i < solutionsMessage.Solutions.Length; i++)
-                        {
-                            solutionsMessage.Solutions[i] = solution;
-                        }
+                        solutionsMessage.Solutions[partialId] = solution;
+                        break;
                     }
                     
-                    lock (partialSolutionsQueue)
-                    {
-                        this.partialSolutionsQueue.Enqueue(solutionsMessage);
-                    }
-                    this.solutionsMessages.RemoveAt(j);
+                    //lock (this.partialSolutionsQueue)
+                    //{
+                    //    this.partialSolutionsQueue.Enqueue(solutionsMessage);
+                    //}
+                    //this.solutionsMessages.RemoveAt(j);
                 }
             }
 
