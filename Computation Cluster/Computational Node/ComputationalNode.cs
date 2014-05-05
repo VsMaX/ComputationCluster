@@ -13,7 +13,7 @@ using DynamicVehicleRoutingProblem;
 namespace Computational_Node
 {
     [MethodBoundary]
-    public class ComputationnalNode : BaseNode
+    public class ComputationalNode : BaseNode
     {
         private Thread sendingStatusThread;
         private CancellationTokenSource sendingStatusThreadCancellationTokenSource;
@@ -37,8 +37,9 @@ namespace Computational_Node
 
         private List<SolutionsMessage> solutionsMessages;
 
-        public ComputationnalNode(string serverIp, int serverPort, int timeout)
+        public ComputationalNode(string serverIp, int serverPort, int timeout)
         {
+            _logger.Debug("Starting CN");
             this.communicationModule = new CommunicationModule(serverIp, serverPort, timeout);
             this.CreateProcessingThreads();
             this.partialProblemsQueue = new Queue<PartialProblemsMessage>();

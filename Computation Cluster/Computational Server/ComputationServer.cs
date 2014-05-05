@@ -218,6 +218,14 @@ namespace Computational_Server
                 lock (finalSolutions)
                 {
                     finalSolutions.Add(deserializedMessage);
+                    _logger.Debug("--------------Added final solution to queue------------");
+                    _logger.Debug("--------------Added final solution to queue------------");
+                    _logger.Debug("--------------Added final solution to queue------------");
+                    _logger.Debug("--------------Added final solution to queue------------");
+                    _logger.Debug("--------------Added final solution to queue------------");
+                    _logger.Debug("--------------Added final solution to queue------------");
+                    _logger.Debug("--------------Added final solution to queue------------");
+                    return String.Empty;
                 }
             }
             else
@@ -225,30 +233,24 @@ namespace Computational_Server
                 lock (partialSolutions)
                 {
                     partialSolutions.Add(deserializedMessage);
-                }
-            }
-
-            lock (partialSolutions)
-            {
-                oldSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
-                partialSolutions.Remove(oldSolutions);
-                var newSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
-                if (newSolutions == null)
-                {
+                    oldSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
+                    partialSolutions.Remove(oldSolutions);
+                    var newSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
+                    if (newSolutions == null)
+                    {
+                        partialSolutions.Add(oldSolutions);
+                        return String.Empty;
+                    }
+                    partialSolutions.Remove(newSolutions);
+                    oldSolutions = MergeSolutions(oldSolutions, newSolutions);
                     partialSolutions.Add(oldSolutions);
-                    return String.Empty;
+                    //TODO tmp soulution
+                    //partialSolutions.Add(deserializedMessage);
+                    if (oldSolutions == null)
+                        throw new Exception("Could not find solution for solutionId: " + deserializedMessage.Id);
+                    return string.Empty;
                 }
-                partialSolutions.Remove(newSolutions);
-                oldSolutions = MergeSolutions(oldSolutions, newSolutions);
-                partialSolutions.Add(oldSolutions);
-                //TODO tmp soulution
-                //partialSolutions.Add(deserializedMessage);
             }
-
-            if(oldSolutions == null)
-                throw new Exception("Could not find solution for solutionId: " + deserializedMessage.Id);
-
-            return string.Empty;
         }
 
         private bool IsFinal(SolutionsMessage solutionsMessage)

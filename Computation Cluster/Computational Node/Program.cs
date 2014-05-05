@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -11,7 +12,8 @@ namespace Computational_Node
     {
         static void Main(string[] args)
         {
-            var node = new ComputationnalNode("127.0.0.1", 5555, 2000);
+            log4net.Config.XmlConfigurator.Configure(new FileInfo("log4net.config"));
+            var node = new ComputationalNode("127.0.0.1", 5555, 2000);
             if (node.RegisterAtServer())
             {
                 node.StartQueueProcessingThread();

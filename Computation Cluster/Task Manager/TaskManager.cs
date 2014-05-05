@@ -118,7 +118,6 @@ namespace Task_Manager
             if (solution == null)
                 return;
 
-
             _logger.Debug("Merging solution");
 
             TaskSolverDVRP taskSolver = CreateTaskSolver(solution.ProblemType, solution.CommonData);
@@ -169,12 +168,11 @@ namespace Task_Manager
 
             _logger.Debug("Finished dividing problem");
 
-            var problemId = GetProblemId();
 
             var solutionsMessage = new PartialProblemsMessage()
             {
                 CommonData = processedMessage.Data,
-                Id = problemId,
+                Id = processedMessage.Id,
                 ProblemType = processedMessage.ProblemType,
                 SolvingTimeout = (ulong) Timeout.TotalMilliseconds,
                 SolvingTimeoutSpecified = true,
