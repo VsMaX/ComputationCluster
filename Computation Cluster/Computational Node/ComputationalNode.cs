@@ -257,14 +257,6 @@ namespace Computational_Node
 
             TaskSolverDVRP taskSolverDvrp = new TaskSolverDVRP(partialProblemMessage.CommonData);
 
-
-            for (int i = 0; i < partialProblemMessage.PartialProblems.Length; i++)
-            {
-                Trace.WriteLine("Starting solving podproblem: " + i);
-                var result = taskSolverDvrp.Solve(partialProblemMessage.PartialProblems[i].Data, new TimeSpan(1,0,0));
-                Trace.WriteLine("Solved partial problem");
-            }
-
             SolutionsMessage solutionMessage = new SolutionsMessage()
                 {
                     CommonData = partialProblemMessage.CommonData,
@@ -289,8 +281,7 @@ namespace Computational_Node
                 //If there is no idle thread, wait and try again
                 if (idleThreadIndex == -1)
                 {
-                    Thread.Sleep(this.Timeout);
-                    continue;
+                    Thread.Sleep(4000);
                 }
 
                 else
@@ -302,10 +293,10 @@ namespace Computational_Node
                         partialProblemMessage.ProblemType;
 
                     this.statusOfComputingThreads[idleThreadIndex].TaskId =
-                        q.First().TaskId;
-
+                        q.Peek().TaskId;
+                    var prob = q.Dequeue();
                     this.computingThreads[idleThreadIndex] = new Thread(() => 
-                        this.Solve(q.Dequeue(), idleThreadIndex, taskSolverDvrp, 
+                        this.Solve(prob, idleThreadIndex, taskSolverDvrp, 
                         (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id));
 
                     this.computingThreads[idleThreadIndex].Start();
@@ -329,13 +320,15 @@ namespace Computational_Node
 
             //solution.ComputationsTime = 
             solution.Data = taskSolverDvrp.Solve(partialProblem.Data, new TimeSpan(0,0,solvingTimeout));
+            Trace.WriteLine("Solved problem: " + solution.TaskId);
             //solution.TimeoutOccured =
             solution.Type = SolutionType.Partial;
 
             lock (this.solutionsMessages)
             {
-                foreach (var solutionsMessage in this.solutionsMessages)
+                for (int j = solutionsMessages.Count - 1; j >= 0; j--)
                 {
+                    var solutionsMessage = solutionsMessages[j];
                     if(solutionsMessage.Id == id)
                     {
                         for(int i = 0; i < solutionsMessage.Solutions.Length; i++)
@@ -348,7 +341,7 @@ namespace Computational_Node
                     {
                         this.partialSolutionsQueue.Enqueue(solutionsMessage);
                     }
-                    this.solutionsMessages.Remove(solutionsMessage);
+                    this.solutionsMessages.RemoveAt(j);
                 }
             }
 

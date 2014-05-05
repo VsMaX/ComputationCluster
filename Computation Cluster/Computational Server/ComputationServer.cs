@@ -222,8 +222,10 @@ namespace Computational_Server
 
             lock (partialSolutions)
             {
-                oldSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
-                MergeSolutions(oldSolutions, deserializedMessage);
+                //oldSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
+                //MergeSolutions(oldSolutions, deserializedMessage);
+                //TODO tmp soulution
+                partialSolutions.Add(deserializedMessage);
             }
 
             if(oldSolutions == null)
@@ -268,17 +270,17 @@ namespace Computational_Server
 
         private void MergeSolutions(SolutionsMessage oldSolutionsMessage, SolutionsMessage newSolutionsMessage)
         {
-            for (int i = 0; i < newSolutionsMessage.Solutions.Length; i++)
-            {
-                var newSolution = newSolutionsMessage.Solutions[i];
-                var oldSolution = oldSolutionsMessage.Solutions.FirstOrDefault(x => x.TaskId == newSolution.TaskId);
-                if (oldSolution == null)
-                    throw new Exception("Could not find task for taskId: " + newSolution.TaskId + ", problemId: " + newSolutionsMessage.Id);
-                oldSolution.Data = newSolution.Data;
-                oldSolution.ComputationsTime = newSolution.ComputationsTime;
-                oldSolution.TimeoutOccured = newSolution.TimeoutOccured;
-                oldSolution.Type = newSolution.Type;
-            }
+            //for (int i = 0; i < newSolutionsMessage.Solutions.Length; i++)
+            //{
+            //    var newSolution = newSolutionsMessage.Solutions[i];
+            //    var oldSolution = oldSolutionsMessage.Solutions.FirstOrDefault(x => x.TaskId == newSolution.TaskId);
+            //    if (oldSolution == null)
+            //        throw new Exception("Could not find task for taskId: " + newSolution.TaskId + ", problemId: " + newSolutionsMessage.Id);
+            //    oldSolution.Data = newSolution.Data;
+            //    oldSolution.ComputationsTime = newSolution.ComputationsTime;
+            //    oldSolution.TimeoutOccured = newSolution.TimeoutOccured;
+            //    oldSolution.Type = newSolution.Type;
+            //}
         }
 
         private string ProcessCaseStatus(string message)
@@ -306,16 +308,16 @@ namespace Computational_Server
 
         private void UpdateSolutionsStatus(StatusMessage statusMessage)
         {
-            foreach (var thread in statusMessage.Threads.Where(x => x.State == StatusThreadState.Busy))
-            {
-                SolutionsMessage solution = null;
-                lock (partialSolutions)
-                {
-                    solution = partialSolutions.FirstOrDefault(x => x.Id == thread.ProblemInstanceId);
-                    var subSolution = solution.Solutions.FirstOrDefault(x => x.TaskId == thread.TaskId);
-                    subSolution.ComputationsTime += thread.HowLong;
-                }
-            }
+            //foreach (var thread in statusMessage.Threads.Where(x => x.State == StatusThreadState.Busy))
+            //{
+            //    SolutionsMessage solution = null;
+            //    lock (partialSolutions)
+            //    {
+            //        solution = partialSolutions.FirstOrDefault(x => x.Id == thread.ProblemInstanceId);
+            //        var subSolution = solution.Solutions.FirstOrDefault(x => x.TaskId == thread.TaskId);
+            //        subSolution.ComputationsTime += thread.HowLong;
+            //    }
+            //}
         }
 
         private ComputationMessage GetTaskForNode(NodeEntry node)
@@ -361,7 +363,13 @@ namespace Computational_Server
 
         private SolutionsMessage GetPartialSolutionForType(RegisterType type)
         {
-            var partialSolution = partialSolutions.FirstOrDefault(AllPartialSolutionSolved);
+            SolutionsMessage partialSolution = null;
+            lock (partialSolutions)
+            {
+                partialSolution = partialSolutions.FirstOrDefault(AllPartialSolutionSolved);
+                partialSolutions.Remove(partialSolution);
+            }
+
             return partialSolution;
         }
 

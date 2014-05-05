@@ -119,15 +119,19 @@ namespace Task_Manager
             if (solution == null)
                 return;
 
-            TaskSolver taskSolver = CreateTaskSolver(solution.ProblemType, solution.CommonData);
+            TaskSolverDVRP taskSolver = CreateTaskSolver(solution.ProblemType, solution.CommonData);
 
-            //taskSolver.MergeSolution();
-            ////TODO tutaj uzupelnijcie tak zeby laczyc rozwiazanie
+            taskSolver.MergeSolution(solution.Solutions.Select(x => x.Data).ToArray());
+
+            _logger.Debug("Finished merging solution: " + solution.Id);
+            _logger.Debug("Finished merging solution: " + solution.Id);
+            _logger.Debug("Finished merging solution: " + solution.Id);
 
             for (int i = 0; i < solution.Solutions.Length; i++)
             {
                 var partialSolution = solution.Solutions[i];
                 partialSolution.Type = SolutionType.Final;
+                partialSolution.Data = solution.Solutions[i].Data;
             }
             var socket = communicationModule.SetupClient();
             communicationModule.Connect(socket);
@@ -160,7 +164,7 @@ namespace Task_Manager
 
             var solutionsMessage = new PartialProblemsMessage()
             {
-                CommonData = null,
+                CommonData = processedMessage.Data,
                 Id = problemId,
                 ProblemType = processedMessage.ProblemType,
                 SolvingTimeout = (ulong) Timeout.TotalMilliseconds,
@@ -259,10 +263,10 @@ namespace Task_Manager
 
         private void ProcessCasePartialSolutions(string message)
         {
-            var dserializedPartialSolutionsMessage = DeserializeMessage<SolutionsMessage>(message);
+            var deserializedPartialSolutionsMessage = DeserializeMessage<SolutionsMessage>(message);
             lock (partialSolutionsMessageQueue)
             {
-                partialSolutionsMessageQueue.Enqueue(dserializedPartialSolutionsMessage);
+                partialSolutionsMessageQueue.Enqueue(deserializedPartialSolutionsMessage);
             }
         }
 
