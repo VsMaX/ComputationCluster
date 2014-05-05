@@ -18,10 +18,10 @@ namespace Task_Manager
             var node = new TaskManager("127.0.0.1", 5555, 10000, threadSleepTimeout);
             node.Start();
             var key = Console.ReadKey();
-            
             //node.DivideProblem();
             Console.ReadKey();
             //node.Stop();
+
             Console.ReadKey();
         }
     }
