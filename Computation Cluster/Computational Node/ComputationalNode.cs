@@ -252,7 +252,7 @@ namespace Computational_Node
                 //}
                 int i = 0;
                 int counter = 0;
-                while(this.solutionsMessages.Count > 0)
+                while(this.solutionsMessages.Count > 0 && i < this.solutionsMessages.Count)
                 {
 
                     foreach (var solution in solutionsMessages[i].Solutions)
@@ -306,7 +306,6 @@ namespace Computational_Node
             {
                 this.solutionsMessages.Add(solutionMessage);
             }
-            
             int idleThreadIndex;
             int counter = 0;
             while (q.Count > 0)
@@ -315,8 +314,8 @@ namespace Computational_Node
                 {
                     //Get index number of the idle thread, which can compute
                     idleThreadIndex = this.GetIdleThreadIndex();
-                }
 
+                }
                 //If there is no idle thread, wait and try again
                 if (idleThreadIndex == -1)
                 {
@@ -325,14 +324,17 @@ namespace Computational_Node
 
                 else
                 {
-                    this.statusOfComputingThreads[idleThreadIndex].ProblemInstanceId =
-                        partialProblemMessage.Id;
+                    lock (this.statusOfComputingThreads)
+                    {
+                        this.statusOfComputingThreads[idleThreadIndex].ProblemInstanceId =
+                            partialProblemMessage.Id;
 
-                    this.statusOfComputingThreads[idleThreadIndex].ProblemType =
-                        partialProblemMessage.ProblemType;
+                        this.statusOfComputingThreads[idleThreadIndex].ProblemType =
+                            partialProblemMessage.ProblemType;
 
-                    this.statusOfComputingThreads[idleThreadIndex].TaskId =
-                        q.Peek().TaskId;
+                        this.statusOfComputingThreads[idleThreadIndex].TaskId =
+                            q.Peek().TaskId;
+                    }
                     var prob = q.Dequeue();
                     this.computingThreads[idleThreadIndex] = new Thread(() => 
                         this.Solve(prob, idleThreadIndex, taskSolverDvrp, 
@@ -359,9 +361,9 @@ namespace Computational_Node
 
             //solution.ComputationsTime = 
             solution.Data = taskSolverDvrp.Solve(partialProblem.Data, new TimeSpan(0,0,solvingTimeout));
-            Trace.WriteLine("Solved problem: " + solution.TaskId);
             //solution.TimeoutOccured =
             solution.Type = SolutionType.Partial;
+            Trace.WriteLine("Solved subproblem id: " + index);
 
             lock (this.solutionsMessages)
             {
@@ -370,11 +372,14 @@ namespace Computational_Node
                     var solutionsMessage = solutionsMessages[j];
                     if(solutionsMessage.Id == id)
                     {
-                        var tmp = solutionsMessage.Solutions.FirstOrDefault(x => x.TaskId == index);
-                        if (tmp != null)
+                        var tmp = solutionsMessage.Solutions[index];
+                        for (int i = 0; i < solutionsMessage.Solutions.Count(); i++)
                         {
-                            tmp.Data = solution.Data;
-                            tmp.Type = SolutionType.Partial;
+                            if (solutionsMessage.Solutions[i] == null)
+                            {
+                                solutionsMessage.Solutions[i] = solution;
+                                break;
+                            }
                         }
 
                         break;
@@ -387,6 +392,7 @@ namespace Computational_Node
                     //this.solutionsMessages.RemoveAt(j);
                 }
             }
+            _logger.Debug("Solved problem: " + solution.TaskId);
 
             lock (this.statusOfComputingThreads)
             {
