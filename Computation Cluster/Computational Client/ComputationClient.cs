@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text;
 using Communication_Library;
+using System.Windows.Controls;
 
 namespace Computational_Client
 {
@@ -20,54 +21,66 @@ namespace Computational_Client
             communicationModule = new CommunicationModule(ip, port, receiveTimeout);
         }
 
-        public void SendSolveRequest(SolveRequestMessage solveRequestMessage)
+        public string SendSolveRequest(SolveRequestMessage solveRequestMessage)
         {
             try
             {
                 clientSocket = communicationModule.SetupClient();
                 communicationModule.Connect(clientSocket);
+
                 var serializer = new ComputationSerializer<SolveRequestMessage>();
                 var message = serializer.Serialize(solveRequestMessage);
                 
                 communicationModule.SendData(message, clientSocket);
+
                 var response = communicationModule.ReceiveData(clientSocket);
-                Trace.WriteLine("Client received: " + response);
                 communicationModule.CloseSocket(clientSocket);
+
+                return response;
             }
             catch (Exception ex)
             {
                 Trace.WriteLine(ex.ToString());
                 //TODO logowanie
             }
+
+            return String.Empty;
         }
 
-        public void SendSolutionRequest(SolutionRequestMessage solutionRequestMessage)
+        public string SendSolutionRequest(SolutionRequestMessage solutionRequestMessage)
         {
             try
             {
                 clientSocket = communicationModule.SetupClient();
                 communicationModule.Connect(clientSocket);
+
                 var serializer = new ComputationSerializer<SolutionRequestMessage>();
                 var message = serializer.Serialize(solutionRequestMessage);
-                //byte[] byteMessage = Encoding.UTF8.GetBytes(message);
+
                 communicationModule.SendData(message, clientSocket);
+
                 var response = communicationModule.ReceiveData(clientSocket);
-                Trace.WriteLine("Client received: " + response);
+
                 communicationModule.CloseSocket(clientSocket);
+
+                return response;
             }
             catch (Exception ex)
             {
                 Trace.WriteLine(ex.ToString());
                 //TODO logowanie
             }
+            return String.Empty;
         }
 
         public string ReceiveDataFromServer()
         {
             clientSocket = communicationModule.SetupClient();
             communicationModule.Connect(clientSocket);
+
             var data = communicationModule.ReceiveData(clientSocket);
             Trace.WriteLine("Response: " + data.ToString());
+
             communicationModule.CloseSocket(clientSocket);
             return data;
         }

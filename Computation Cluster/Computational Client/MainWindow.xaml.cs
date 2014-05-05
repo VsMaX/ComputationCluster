@@ -14,6 +14,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Communication_Library;
 using System.IO;
+using System.Threading;
+using System.ComponentModel;
 
 namespace Computational_Client
 {
@@ -25,37 +27,96 @@ namespace Computational_Client
         public MainWindow()
         {
             InitializeComponent();
+            this.defaultGrid.DataContext = this.textBoxContent;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            var computationalClient = new ComputationClient("127.0.0.1", 5555, 5000);
-            byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
+        public SolveRequestMessage solveRequestMessage;
 
-            var sr = new SolveRequestMessage() {Data = null, ProblemType = "DVRP", SolvingTimeout = 5000};
-            computationalClient.SendSolveRequest(sr);
-            button1.ClickMode = ClickMode.Release;
-            string sr2 = computationalClient.ReceiveDataFromServer();
-            potwierdzenie.Text = sr2;
+        public ComputationClient computationalClient;
+
+        public BaseNode bn = new BaseNode();
+
+        public ulong problemId;
+
+        public TextBoxContent textBoxContent = new TextBoxContent()
+            {
+                Content = "potwierdzenie od serwera"
+            };
+
+        private void ButtonSendSolutionRequest_Click(object sender, RoutedEventArgs e)
+        {
+            //byte[] msg = Encoding.UTF8.GetBytes(wiadomosc.Text);
+
+            //var sr = new SolveRequestMessage() { Data = null, ProblemType = "DVRP", SolvingTimeout = 5000 };
+            //this.computationalClient.SendSolveRequest(sr);
+
+            //buttonSendSolutionRequest.ClickMode = ClickMode.Release;
+
+            //string sr2 = this.computationalClient.ReceiveDataFromServer();
+            //potwierdzenie.Text = sr2;
+
+            //
+            SolutionRequestMessage srm = new SolutionRequestMessage()
+                {
+                    Id = this.problemId
+                };
+            SolutionsMessage sm = null;
+            String message = String.Empty;
+
+            while(sm == null)
+            {
+                message = this.computationalClient.SendSolutionRequest(srm);
+                if(message != String.Empty)
+                {
+                    switch (bn.GetMessageName(message))
+                    {
+                        case "Solutions":
+                            var serializer = new ComputationSerializer<SolutionsMessage>();
+                            sm = serializer.Deserialize(message);
+                            foreach (var solution in sm.Solutions)
+                            {
+                                if (solution.Type == SolutionType.Final)
+                                {
+                                    this.potwierdzenie.Text += "\n\nFinal solution: "
+                                                                   + System.Text.Encoding.UTF8.GetString(solution.Data);
+                                    break;
+                                }
+                            }
+
+                            sm = null;
+                            break;
+
+                        case "Other...?":
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+                else
+                {
+                    this.potwierdzenie.Text += "\n\n Message empty";
+                }
+                this.potwierdzenie.Text += "\n\n Computing...";
+                Thread.Sleep(10000);
+            }
         }
 
-        private void Button2_Click(object sender, RoutedEventArgs e)
+        private void ButtonSendSolveRequest_Click(object sender, RoutedEventArgs e)
         {
-            var computationalClient = new ComputationClient("127.0.0.1", 5555, 5000);
+            var message = this.computationalClient.SendSolveRequest(this.solveRequestMessage);
+            this.potwierdzenie.Text += "\nReceived form CC" + message;
 
-            var solutionRequest = new SolutionRequestMessage() { Id = 4 };
-            computationalClient.SendSolutionRequest(solutionRequest);
-
-            string sr3 = computationalClient.ReceiveDataFromServer();
-            potwierdzenie.Text = sr3; 
+            var serializer = new ComputationSerializer<SolveRequestResponseMessage>();
+            SolveRequestResponseMessage srrm = serializer.Deserialize(message);
+            this.problemId = srrm.Id;
+            this.potwierdzenie.Text += "\n\nAssigned problem ID = " + this.problemId;
         }
 
         private void Browse_Click(object sender, RoutedEventArgs e)
         {
             // Create OpenFileDialog
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-
-            // Set filter for file extension and default file extension
 
             // Display OpenFileDialog by calling ShowDialog method
             Nullable<bool> result = dlg.ShowDialog();
@@ -68,18 +129,22 @@ namespace Computational_Client
                 string content = File.ReadAllText(filename);
                 wiadomosc.Text = content;
 
-                CommunicationModule cm = new CommunicationModule("127.0.0.1", 5555, 5000);
-                var socket = cm.SetupClient();
-                cm.Connect(socket);
-                SolveRequestMessage solveRequestMessage = new SolveRequestMessage()
+                //CommunicationModule cm = new CommunicationModule("127.0.0.1", 5555, 5000);
+                //var socket = cm.SetupClient();
+                //cm.Connect(socket);
+                
+                this.solveRequestMessage = new SolveRequestMessage()
                 {
                     Data = CommunicationModule.ConvertStringToData(content),
                     ProblemType = "DVRP",
-                    SolvingTimeout = 100000
+                    SolvingTimeout = long.Parse(this.timeoutTextBox.Text)
                 };
-                BaseNode bn = new BaseNode();
-                cm.SendData(bn.SerializeMessage(solveRequestMessage), socket);
-                cm.CloseSocket(socket);
+
+                this.computationalClient = new ComputationClient("127.0.0.1", 5555, 2000);
+                //BaseNode bn = new BaseNode();
+
+                //cm.SendData(bn.SerializeMessage(solveRequestMessage), socket);
+                //cm.CloseSocket(socket);
             }
         }
     }
