@@ -387,12 +387,6 @@ namespace Computational_Node
                         Trace.WriteLine("\n\n Subproblem id: " + partialProblem.TaskId + " waits for complete solution\n\n");
                         break;
                     }
-                    
-                    //lock (this.partialSolutionsQueue)
-                    //{
-                    //    this.partialSolutionsQueue.Enqueue(solutionsMessage);
-                    //}
-                    //this.solutionsMessages.RemoveAt(j);
                 }
             }
             //_logger.Debug("Solved problem: " + solution.TaskId);

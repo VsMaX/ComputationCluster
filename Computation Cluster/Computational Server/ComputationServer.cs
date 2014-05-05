@@ -29,10 +29,11 @@ namespace Computational_Server
         private CancellationTokenSource processingThreadCancellationToken;
 
         private ConcurrentDictionary<ulong, SolveRequestMessage> solveRequests;
+        private List<PartialProblemsMessage> dividedProblems; 
         private Dictionary<ulong, NodeEntry> activeNodes;
         private List<SolutionsMessage> partialSolutions;
         private List<SolutionsMessage> finalSolutions;
-        private Dictionary<ulong, PartialProblemsMessage> partialProblems;
+        private List<PartialProblemsMessage> partialProblems;
         private ICommunicationModule communicationModule;
         public readonly int processingThreadSleepTime;
         public readonly TimeSpan DefaultTimeout;
@@ -49,12 +50,13 @@ namespace Computational_Server
             activeNodes = new Dictionary<ulong, NodeEntry>();
             finalSolutions = new List<SolutionsMessage>();
             partialSolutions = new List<SolutionsMessage>();
+            dividedProblems = new List<PartialProblemsMessage>();
             DefaultTimeout = nodeTimeout;
             nodesId = 1;
             solutionId = 1;
             this.communicationModule = communicationModule;
             this.processingThreadSleepTime = threadSleepTime;
-            partialProblems = new Dictionary<ulong, PartialProblemsMessage>();
+            partialProblems = new List<PartialProblemsMessage>();
             serializeMessageMethod = typeof(ComputationServer).GetMethod("SerializeMessage");
         }
 
@@ -219,12 +221,6 @@ namespace Computational_Server
                 {
                     finalSolutions.Add(deserializedMessage);
                     _logger.Debug("--------------Added final solution to queue------------");
-                    _logger.Debug("--------------Added final solution to queue------------");
-                    _logger.Debug("--------------Added final solution to queue------------");
-                    _logger.Debug("--------------Added final solution to queue------------");
-                    _logger.Debug("--------------Added final solution to queue------------");
-                    _logger.Debug("--------------Added final solution to queue------------");
-                    _logger.Debug("--------------Added final solution to queue------------");
                     return String.Empty;
                 }
             }
@@ -232,25 +228,18 @@ namespace Computational_Server
             {
                 lock (partialSolutions)
                 {
-                    partialSolutions.Add(deserializedMessage);
                     oldSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
-                    partialSolutions.Remove(oldSolutions);
-                    var newSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
-                    if (newSolutions == null)
+                    if(oldSolutions == null)
                     {
-                        partialSolutions.Add(oldSolutions);
+                        partialSolutions.Add(deserializedMessage);
                         return String.Empty;
                     }
-                    partialSolutions.Remove(newSolutions);
-                    oldSolutions = MergeSolutions(oldSolutions, newSolutions);
+                    partialSolutions.Remove(oldSolutions);
+                    oldSolutions = MergeSolutions(oldSolutions, deserializedMessage);
                     partialSolutions.Add(oldSolutions);
-                    //TODO tmp soulution
-                    //partialSolutions.Add(deserializedMessage);
-                    if (oldSolutions == null)
-                        throw new Exception("Could not find solution for solutionId: " + deserializedMessage.Id);
-                    return string.Empty;
                 }
             }
+            return string.Empty;
         }
 
         private bool IsFinal(SolutionsMessage solutionsMessage)
@@ -282,11 +271,40 @@ namespace Computational_Server
         private string ProcessCaseSolvePartialProblems(string message)
         {
             var deserializedMessage = DeserializeMessage<PartialProblemsMessage>(message);
+            lock (dividedProblems)
+            {
+                dividedProblems.Add(deserializedMessage);
+            }
+            var partialProblemsDivided = DividePartialProblems(deserializedMessage);
             lock (partialProblems)
             {
-                partialProblems.Add(deserializedMessage.Id, deserializedMessage);
+                for (int i = 0; i < partialProblemsDivided.Count; i++)
+                {
+                    var partialProblem = partialProblemsDivided[i];
+                    partialProblems.Add(partialProblem);
+                }
             }
             return string.Empty;
+        }
+
+        private List<PartialProblemsMessage> DividePartialProblems(PartialProblemsMessage partialProblemsMessage)
+        {
+            var partialProblemsList = new List<PartialProblemsMessage>();
+            for (int i = 0; i < partialProblemsMessage.PartialProblems.Length; i++)
+            {
+                var partialProblem = new PartialProblemsMessage()
+                {
+                    Id = partialProblemsMessage.Id,
+                    CommonData = partialProblemsMessage.CommonData,
+                    ProblemType = partialProblemsMessage.ProblemType,
+                    PartialProblems =
+                        new SolvePartialProblemsPartialProblem[1] {partialProblemsMessage.PartialProblems[i]},
+                    SolvingTimeout = partialProblemsMessage.SolvingTimeout,
+                    SolvingTimeoutSpecified = partialProblemsMessage.SolvingTimeoutSpecified
+                };
+                partialProblemsList.Add(partialProblem);
+            }
+            return partialProblemsList;
         }
 
         private SolutionsMessage MergeSolutions(SolutionsMessage oldSolutionsMessage, SolutionsMessage newSolutionsMessage)
@@ -296,13 +314,10 @@ namespace Computational_Server
                 var newSolution = newSolutionsMessage.Solutions[i];
                 if(newSolution == null)
                     throw new Exception("Could solutions is null " + newSolution.TaskId + ", problemId: " + newSolutionsMessage.Id);
-                var oldSolution = oldSolutionsMessage.Solutions.FirstOrDefault(x => x.TaskId == newSolution.TaskId);
-                if (oldSolution == null)
-                    throw new Exception("Could not find task for taskId: " + newSolution.TaskId + ", problemId: " + newSolutionsMessage.Id);
-                oldSolution.Data = newSolution.Data;
-                oldSolution.ComputationsTime = newSolution.ComputationsTime;
-                oldSolution.TimeoutOccured = newSolution.TimeoutOccured;
-                oldSolution.Type = newSolution.Type;
+
+                var oldSolutions = oldSolutionsMessage.Solutions.ToList();
+                oldSolutions.AddRange(newSolutionsMessage.Solutions);
+                oldSolutionsMessage.Solutions = oldSolutions.ToArray();
             }
             return oldSolutionsMessage;
         }
@@ -363,13 +378,9 @@ namespace Computational_Server
             PartialProblemsMessage partialProblem = null;
             lock (partialProblems)
             {
-                if (partialProblems.Any(x => node.SolvingProblems.Contains(x.Value.ProblemType)))
-                {
-                    var partialProblemKeyValue =
-                       partialProblems.FirstOrDefault(x => node.SolvingProblems.Contains(x.Value.ProblemType));
-                    partialProblem = partialProblemKeyValue.Value;
-                    partialProblems.Remove(partialProblemKeyValue.Key);
-                }
+                partialProblem = partialProblems.FirstOrDefault(x => node.SolvingProblems.Contains(x.ProblemType));
+                if (partialProblem != null)
+                    partialProblems.Remove(partialProblem);
             }
             return partialProblem;
         }
@@ -385,16 +396,32 @@ namespace Computational_Server
             return null;
         }
 
+        /// <summary>
+        /// Returns SolutionsMessage with all partial solutions solved for merging
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
         private SolutionsMessage GetPartialSolutionForType(RegisterType type)
         {
             SolutionsMessage partialSolution = null;
             lock (partialSolutions)
             {
-                partialSolution = partialSolutions.FirstOrDefault(AllPartialSolutionSolved);
-                if(partialSolution != null)
+                foreach (var incompleteSolution in partialSolutions)
+                {
+                    lock (dividedProblems)
+                    {
+                        var partialProblem = dividedProblems.FirstOrDefault(x => x.Id == incompleteSolution.Id);
+                        if (partialProblem == null)
+                            continue;
+                        if (partialProblem.PartialProblems.Length == incompleteSolution.Solutions.Length)
+                            partialSolution = incompleteSolution; // found complete solution
+                    }
+                }
+                if (partialSolution != null)
+                {
                     partialSolutions.Remove(partialSolution);
+                }
             }
-
             return partialSolution;
         }
 
@@ -416,9 +443,16 @@ namespace Computational_Server
 
             if (solveRequest != null)
             {
+                int activeNodeCount = 1;
+                
+                lock (activeNodes)
+                {
+                    activeNodeCount = activeNodes.Count;
+                }
+
                 divideProblemMessage = new DivideProblemMessage()
                 {
-                    ComputationalNodes = (ulong)activeNodes.Count,
+                    ComputationalNodes = (ulong)activeNodeCount,
                     Data = solveRequest.Data,
                     ProblemType = solveRequest.ProblemType,
                     Id = solveRequestId
@@ -472,8 +506,17 @@ namespace Computational_Server
 
             lock (finalSolutions)
             {
-                solution = finalSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
-                finalSolutions.Remove(solution);
+                lock (dividedProblems)
+                {
+                    solution = finalSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
+                    var partialProblemsToRemove = dividedProblems.FirstOrDefault(x => x.Id == deserializedMessage.Id);
+
+                    if (solution != null && partialProblemsToRemove != null)
+                    {
+                        finalSolutions.Remove(solution);
+                        dividedProblems.Remove(partialProblemsToRemove);
+                    }
+                }
             }
 
             if (solution == null)
