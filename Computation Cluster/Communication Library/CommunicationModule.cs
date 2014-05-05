@@ -139,7 +139,7 @@ namespace Communication_Library
             while (bytesCount != message.Length)
             {
                 bytesCount += socket.Send(message);
-                _logger.Debug("Sent " + bytesCount + " bytes");
+                _logger.Debug("Sent " + bytesCount + " bytes" + ".Message: " + str);
             }
         }
 

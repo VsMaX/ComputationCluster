@@ -471,6 +471,7 @@ namespace Computational_Server
             lock (finalSolutions)
             {
                 solution = finalSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
+                finalSolutions.Remove(solution);
             }
 
             if (solution == null)

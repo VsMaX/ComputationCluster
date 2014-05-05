@@ -73,7 +73,6 @@ namespace Task_Manager
 
             var response = communicationModule.ReceiveData(socket);
             var deserializedResponse = DeserializeMessage<RegisterResponseMessage>(response);
-
             this.NodeId = deserializedResponse.Id;
             this.Timeout = deserializedResponse.TimeoutTimeSpan;
 
@@ -119,6 +118,9 @@ namespace Task_Manager
             if (solution == null)
                 return;
 
+
+            _logger.Debug("Merging solution");
+
             TaskSolverDVRP taskSolver = CreateTaskSolver(solution.ProblemType, solution.CommonData);
 
             taskSolver.MergeSolution(solution.Solutions.Select(x => x.Data).ToArray());
@@ -134,8 +136,11 @@ namespace Task_Manager
                 ProblemType = "DVRP",
                 Solutions = new Solution[1]
             };
-
-            solutionsMessage.Solutions[0].Data = taskSolver.Solution;
+            solutionsMessage.Solutions[0] = new Solution()
+            {
+                Type = SolutionType.Final,
+                Data = taskSolver.Solution
+            };
 
             var socket = communicationModule.SetupClient();
             communicationModule.Connect(socket);
@@ -249,7 +254,7 @@ namespace Task_Manager
                 case "DivideProblem":
                     ProcessCaseDivideProblem(message);
                     break;
-                case "PartialProblems":
+                case "Solutions":
                     ProcessCasePartialSolutions(message);
                     break;
                 default:
@@ -273,6 +278,7 @@ namespace Task_Manager
             lock (partialSolutionsMessageQueue)
             {
                 partialSolutionsMessageQueue.Enqueue(deserializedPartialSolutionsMessage);
+                _logger.Debug("Enqueued partial solution");
             }
         }
 
