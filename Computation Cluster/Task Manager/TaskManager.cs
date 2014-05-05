@@ -127,15 +127,19 @@ namespace Task_Manager
             _logger.Debug("Finished merging solution: " + solution.Id);
             _logger.Debug("Finished merging solution: " + solution.Id);
 
-            for (int i = 0; i < solution.Solutions.Length; i++)
+            SolutionsMessage solutionsMessage = new SolutionsMessage()
             {
-                var partialSolution = solution.Solutions[i];
-                partialSolution.Type = SolutionType.Final;
-                partialSolution.Data = solution.Solutions[i].Data;
-            }
+                Id = solution.Id,
+                CommonData = null,
+                ProblemType = "DVRP",
+                Solutions = new Solution[1]
+            };
+
+            solutionsMessage.Solutions[0].Data = taskSolver.Solution;
+
             var socket = communicationModule.SetupClient();
             communicationModule.Connect(socket);
-            var message = SerializeMessage(solution);
+            var message = SerializeMessage(solutionsMessage);
             communicationModule.SendData(message, socket);
 
             communicationModule.CloseSocket(socket);
@@ -156,7 +160,7 @@ namespace Task_Manager
 
             TaskSolverDVRP taskSolver = CreateTaskSolver(processedMessage.ProblemType, processedMessage.Data);
 
-            var dividedProblem = taskSolver.DivideProblem(5);
+            var dividedProblem = taskSolver.DivideProblem(3);
 
             _logger.Debug("Finished dividing problem");
 
@@ -172,7 +176,9 @@ namespace Task_Manager
                 PartialProblems = new SolvePartialProblemsPartialProblem[(int) processedMessage.ComputationalNodes]
             };
 
-            for (int i = 0; i < (int)processedMessage.ComputationalNodes; i++)
+            solutionsMessage.PartialProblems = new SolvePartialProblemsPartialProblem[dividedProblem.Length];
+
+            for (int i = 0; i < dividedProblem.Length; i++)
             {
                 solutionsMessage.PartialProblems[i] = new SolvePartialProblemsPartialProblem()
                 {
@@ -180,10 +186,10 @@ namespace Task_Manager
                     TaskId = (ulong)i
                 };
             }
+
             var socket = communicationModule.SetupClient();
             communicationModule.Connect(socket);
             var message = SerializeMessage(solutionsMessage);
-            _logger.Debug("Sending " + message.Length +" bytes");
             communicationModule.SendData(message, socket);
             communicationModule.CloseSocket(socket);
         }

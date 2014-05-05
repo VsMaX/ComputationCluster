@@ -12,6 +12,7 @@ using DynamicVehicleRoutingProblem;
 
 namespace Computational_Node
 {
+    [MethodBoundary]
     public class ComputationnalNode : BaseNode
     {
         private Thread sendingStatusThread;

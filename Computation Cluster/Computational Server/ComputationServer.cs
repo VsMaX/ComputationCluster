@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using Communication_Library;
 using log4net;
+using log4net.Appender;
 
 namespace Computational_Server
 {
@@ -219,13 +220,29 @@ namespace Computational_Server
                     finalSolutions.Add(deserializedMessage);
                 }
             }
+            else
+            {
+                lock (partialSolutions)
+                {
+                    partialSolutions.Add(deserializedMessage);
+                }
+            }
 
             lock (partialSolutions)
             {
-                //oldSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
-                //MergeSolutions(oldSolutions, deserializedMessage);
+                oldSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
+                partialSolutions.Remove(oldSolutions);
+                var newSolutions = partialSolutions.FirstOrDefault(x => x.Id == deserializedMessage.Id);
+                if (newSolutions == null)
+                {
+                    partialSolutions.Add(oldSolutions);
+                    return String.Empty;
+                }
+                partialSolutions.Remove(newSolutions);
+                oldSolutions = MergeSolutions(oldSolutions, newSolutions);
+                partialSolutions.Add(oldSolutions);
                 //TODO tmp soulution
-                partialSolutions.Add(deserializedMessage);
+                //partialSolutions.Add(deserializedMessage);
             }
 
             if(oldSolutions == null)
@@ -249,6 +266,8 @@ namespace Computational_Server
         private bool AllPartialSolutionSolved(SolutionsMessage oldSolutions)
         {
             bool solved = true;
+            if (oldSolutions == null)
+                return false;
             for (int i = 0; i < oldSolutions.Solutions.Length; i++)
             {
                 var solution = oldSolutions.Solutions[i];
@@ -268,19 +287,22 @@ namespace Computational_Server
             return string.Empty;
         }
 
-        private void MergeSolutions(SolutionsMessage oldSolutionsMessage, SolutionsMessage newSolutionsMessage)
+        private SolutionsMessage MergeSolutions(SolutionsMessage oldSolutionsMessage, SolutionsMessage newSolutionsMessage)
         {
-            //for (int i = 0; i < newSolutionsMessage.Solutions.Length; i++)
-            //{
-            //    var newSolution = newSolutionsMessage.Solutions[i];
-            //    var oldSolution = oldSolutionsMessage.Solutions.FirstOrDefault(x => x.TaskId == newSolution.TaskId);
-            //    if (oldSolution == null)
-            //        throw new Exception("Could not find task for taskId: " + newSolution.TaskId + ", problemId: " + newSolutionsMessage.Id);
-            //    oldSolution.Data = newSolution.Data;
-            //    oldSolution.ComputationsTime = newSolution.ComputationsTime;
-            //    oldSolution.TimeoutOccured = newSolution.TimeoutOccured;
-            //    oldSolution.Type = newSolution.Type;
-            //}
+            for (int i = 0; i < newSolutionsMessage.Solutions.Length; i++)
+            {
+                var newSolution = newSolutionsMessage.Solutions[i];
+                if(newSolution == null)
+                    throw new Exception("Could solutions is null " + newSolution.TaskId + ", problemId: " + newSolutionsMessage.Id);
+                var oldSolution = oldSolutionsMessage.Solutions.FirstOrDefault(x => x.TaskId == newSolution.TaskId);
+                if (oldSolution == null)
+                    throw new Exception("Could not find task for taskId: " + newSolution.TaskId + ", problemId: " + newSolutionsMessage.Id);
+                oldSolution.Data = newSolution.Data;
+                oldSolution.ComputationsTime = newSolution.ComputationsTime;
+                oldSolution.TimeoutOccured = newSolution.TimeoutOccured;
+                oldSolution.Type = newSolution.Type;
+            }
+            return oldSolutionsMessage;
         }
 
         private string ProcessCaseStatus(string message)
@@ -367,7 +389,8 @@ namespace Computational_Server
             lock (partialSolutions)
             {
                 partialSolution = partialSolutions.FirstOrDefault(AllPartialSolutionSolved);
-                partialSolutions.Remove(partialSolution);
+                if(partialSolution != null)
+                    partialSolutions.Remove(partialSolution);
             }
 
             return partialSolution;
