@@ -385,12 +385,6 @@ namespace Computational_Node
 
                         break;
                     }
-                    
-                    //lock (this.partialSolutionsQueue)
-                    //{
-                    //    this.partialSolutionsQueue.Enqueue(solutionsMessage);
-                    //}
-                    //this.solutionsMessages.RemoveAt(j);
                 }
             }
             _logger.Debug("Solved problem: " + solution.TaskId);

@@ -164,7 +164,7 @@ namespace Task_Manager
 
             TaskSolverDVRP taskSolver = CreateTaskSolver(processedMessage.ProblemType, processedMessage.Data);
 
-            var dividedProblem = taskSolver.DivideProblem(3);
+            var dividedProblem = taskSolver.DivideProblem((int)processedMessage.ComputationalNodes);
 
             _logger.Debug("Finished dividing problem");
 
