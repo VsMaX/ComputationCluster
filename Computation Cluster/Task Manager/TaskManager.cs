@@ -227,7 +227,7 @@ namespace Task_Manager
                 if(!String.IsNullOrEmpty(receivedMessage))
                     ProcessMessage(receivedMessage);
 
-                Thread.Sleep(threadSleepTimeout);
+                Thread.Sleep((int)(threadSleepTimeout * 0.8));
             }
         }
 

@@ -132,7 +132,7 @@ namespace Computational_Node
                 //Connect to CS
                 socket = communicationModule.SetupClient();
                 communicationModule.Connect(socket);
-                Trace.WriteLine("Connected to CS");
+                //Trace.WriteLine("Connected to CS");
 
                 //Create StatusMessage
                 var statusMessage = new StatusMessage()
@@ -144,7 +144,7 @@ namespace Computational_Node
                 //Send StatusMessage to CS
                 var messageString = this.SerializeMessage(statusMessage);
                 this.communicationModule.SendData(messageString, socket);
-                Trace.WriteLine("Sent data to CS: " + messageString);
+                //Trace.WriteLine("Sent data to CS: " + messageString);
 
                 //Receive any response from CS
                 var receivedMessage = communicationModule.ReceiveData(socket);
@@ -175,7 +175,7 @@ namespace Computational_Node
                 }
 
                 //Sleep for the period of time given by CS
-                Thread.Sleep(this.Timeout);
+                Thread.Sleep(4000);
             }
         }
 
@@ -200,7 +200,7 @@ namespace Computational_Node
                 this.ProcessSolutionsMessage();
 
                 //Sleep for the period of time given by CS
-                Thread.Sleep(this.Timeout);
+                Thread.Sleep(4000);
             }
         }
 
@@ -215,7 +215,7 @@ namespace Computational_Node
                 {
                     partialProblemMessage = this.partialProblemsQueue.Dequeue();
                     Trace.WriteLine(partialProblemMessage.Id, "PartialProblem id[{0}] removed from queue");
-
+                    Trace.WriteLine("Starting solving problem id: " + partialProblemMessage.Id);
                     Thread solvePartialProblemThread = new Thread(() => SolvePartialProblem(partialProblemMessage));
                     solvePartialProblemThread.Start();
                 }
@@ -256,6 +256,14 @@ namespace Computational_Node
             Queue<SolvePartialProblemsPartialProblem> q = new Queue<SolvePartialProblemsPartialProblem>(partialProblemMessage.PartialProblems);
 
             TaskSolverDVRP taskSolverDvrp = new TaskSolverDVRP(partialProblemMessage.CommonData);
+
+
+            for (int i = 0; i < partialProblemMessage.PartialProblems.Length; i++)
+            {
+                Trace.WriteLine("Starting solving podproblem: " + i);
+                var result = taskSolverDvrp.Solve(partialProblemMessage.PartialProblems[i].Data, new TimeSpan(1,0,0));
+                Trace.WriteLine("Solved partial problem");
+            }
 
             SolutionsMessage solutionMessage = new SolutionsMessage()
                 {
@@ -367,6 +375,4 @@ namespace Computational_Node
             return -1;
         }
     }
-
-
 }

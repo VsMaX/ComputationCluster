@@ -342,6 +342,7 @@ namespace Computational_Server
                     var partialProblemKeyValue =
                        partialProblems.FirstOrDefault(x => node.SolvingProblems.Contains(x.Value.ProblemType));
                     partialProblem = partialProblemKeyValue.Value;
+                    partialProblems.Remove(partialProblemKeyValue.Key);
                 }
             }
             return partialProblem;
