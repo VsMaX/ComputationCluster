@@ -11,7 +11,7 @@
         <Button x:Name="browse" Content="Browse" HorizontalAlignment="Left" Height="22" Margin="15,20,0,0" VerticalAlignment="Top" Width="84" Click="Browse_Click"/>
         <Button x:Name="buttonSendSolutionRequest" Content="SendSolutionRequest" HorizontalAlignment="Left" Height="23" Margin="237,20,0,0" VerticalAlignment="Top" Width="134" Click="ButtonSendSolutionRequest_Click"/>
         <Button x:Name="buttonSendSolveRequest" Content="SendSolveRequest" HorizontalAlignment="Left" Margin="237,62,0,0" VerticalAlignment="Top" Width="134" Click="ButtonSendSolveRequest_Click"/>
-        <TextBox x:Name="timeoutTextBox" HorizontalAlignment="Left" Height="23" Margin="15,61,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="84"/>
+        <TextBox x:Name="timeoutTextBox" HorizontalAlignment="Left" Height="23" Margin="15,61,0,0" TextWrapping="Wrap" Text="20000" VerticalAlignment="Top" Width="84" IsEnabled="False"/>
 
     </Grid>
 </Window>

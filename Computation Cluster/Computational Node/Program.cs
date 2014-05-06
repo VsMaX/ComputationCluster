@@ -13,7 +13,7 @@ namespace Computational_Node
         static void Main(string[] args)
         {
             log4net.Config.XmlConfigurator.Configure(new FileInfo("log4net.config"));
-            var node = new ComputationalNode("127.0.0.1", 5555, 2000);
+            var node = new ComputationalNode("127.0.0.1", 5555, 5000);
             if (node.RegisterAtServer())
             {
                 node.StartQueueProcessingThread();

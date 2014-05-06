@@ -82,7 +82,7 @@ namespace Computational_Client
             while (sm == null)
             {
                 //this.potwierdzenie.Text += "\n\nAsking for Final solution... ";
-                string str = "\n\nAsking for Final solution... ";
+                string str = "\nAsking for Final solution... ";
                 this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] {str});
                 message = this.computationalClient.SendSolutionRequest(srm);
                 if (message != String.Empty)
@@ -117,10 +117,10 @@ namespace Computational_Client
                 }
                 else
                 {
-                    str = "\n\n Message empty";
-                    this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { str });
+                    //str = "\n\n Message empty";
+                    //this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { str });
                 }
-                str = "\n\n Computing...";
+                str = " Computing...";
                 this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { str });
                 Thread.Sleep(10000);
             }

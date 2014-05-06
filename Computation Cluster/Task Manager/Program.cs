@@ -15,13 +15,13 @@ namespace Task_Manager
             log4net.Config.XmlConfigurator.Configure(new FileInfo("log4net.config"));
             int receiveDataTimeout = Int32.Parse(ConfigurationManager.AppSettings["ReceiveDataTimeout"]);
             int threadSleepTimeout = Int32.Parse(ConfigurationManager.AppSettings["ThreadSleepTimeout"]);
-            var node = new TaskManager("127.0.0.1", 5555, 10000, threadSleepTimeout);
+            var node = new TaskManager("127.0.0.1", 5555, receiveDataTimeout, threadSleepTimeout);
             node.Start();
             var key = Console.ReadKey();
+            
             //node.DivideProblem();
             Console.ReadKey();
             //node.Stop();
-
             Console.ReadKey();
         }
     }
