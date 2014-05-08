@@ -18,8 +18,15 @@ namespace Computational_Node
         private Thread sendingStatusThread;
         private CancellationTokenSource sendingStatusThreadCancellationTokenSource;
 
-        private Thread processingQueueThread;
-        private CancellationTokenSource processingThreadCancellationTokenSource;
+        private Thread processingProblemsQueueThread;
+        private CancellationTokenSource processingProblemsQueueThreadCancellationTokenSource;
+
+        private Thread processingSolutionsQueueThread;
+        private CancellationTokenSource processingSolutionsQueueThreadCancellationTokenSource;
+
+        private Socket statusSocket;
+        private Socket solutionsSocket;
+        private Socket registerSocket;
 
         private Queue<PartialProblemsMessage> partialProblemsQueue;
         private Queue<SolutionsMessage> partialSolutionsQueue;
@@ -33,24 +40,20 @@ namespace Computational_Node
         private CommunicationModule communicationModule;
         private ulong NodeId { get; set; }
         private TimeSpan Timeout { get; set; }
-        private Socket socket;
 
-        private Socket finalSocket;
+        private List<SolutionsMessage> solutionsMessagesList;
 
-        private Socket registerSocket;
-
-        private List<SolutionsMessage> solutionsMessages;
-
-        public ComputationalNode(string serverIp, int serverPort, int timeout)
+        public ComputationalNode(string serverIp, int serverPort, int receivingTimeout)
         {
             _logger.Debug("Starting CN");
-            this.communicationModule = new CommunicationModule(serverIp, serverPort, timeout);
+            this.communicationModule = new CommunicationModule(serverIp, serverPort, receivingTimeout);
             this.CreateProcessingThreads();
             this.partialProblemsQueue = new Queue<PartialProblemsMessage>();
             this.partialSolutionsQueue = new Queue<SolutionsMessage>();
-            this.partialSolutionsQueuePart = new Queue<Solution>();
 
-            this.solutionsMessages = new List<SolutionsMessage>();
+            //
+            this.partialSolutionsQueuePart = new Queue<Solution>();
+            this.solutionsMessagesList = new List<SolutionsMessage>();
         }
 
         private void CreateProcessingThreads()
@@ -124,23 +127,31 @@ namespace Computational_Node
             this.sendingStatusThread.Start();
         }
 
-        public void StartQueueProcessingThread()
+        public void StartProblemsQueueProcessingThread()
         {
-            this.processingThreadCancellationTokenSource = new CancellationTokenSource();
-            this.processingQueueThread = new Thread(this.ProcessingThread);
+            this.processingProblemsQueueThreadCancellationTokenSource = new CancellationTokenSource();
+            this.processingProblemsQueueThread = new Thread(this.ProblemsQueueProcessingThread);
 
             //Start processing PartialProblems Queue
-            this.processingQueueThread.Start();
+            this.processingProblemsQueueThread.Start();
+        }
+
+        public void StartSolutionsQueueProcessingThread()
+        {
+            this.processingSolutionsQueueThreadCancellationTokenSource = new CancellationTokenSource();
+            this.processingSolutionsQueueThread = new Thread(this.SolutionsQueueProcessingThread);
+
+            //Start processing PartialSolutions Queue
+            this.processingSolutionsQueueThread.Start();
         }
 
         private void SendStatusMessage()
         {
-            while (!sendingStatusThreadCancellationTokenSource.IsCancellationRequested)
+            while (!this.sendingStatusThreadCancellationTokenSource.IsCancellationRequested)
             {
                 //Connect to CS
-                socket = communicationModule.SetupClient();
-                communicationModule.Connect(socket);
-                //Trace.WriteLine("Connected to CS");
+                statusSocket = communicationModule.SetupClient();
+                communicationModule.Connect(statusSocket);
 
                 //Create StatusMessage
                 var statusMessage = new StatusMessage()
@@ -151,14 +162,13 @@ namespace Computational_Node
 
                 //Send StatusMessage to CS
                 var messageString = this.SerializeMessage(statusMessage);
-                this.communicationModule.SendData(messageString, socket);
-                //Trace.WriteLine("Sent data to CS: " + messageString);
+                this.communicationModule.SendData(messageString, statusSocket);
 
                 //Receive any response from CS
-                var receivedMessage = communicationModule.ReceiveData(socket);
+                var receivedMessage = communicationModule.ReceiveData(statusSocket);
 
                 //Close connection
-                this.communicationModule.CloseSocket(socket);
+                this.communicationModule.CloseSocket(statusSocket);
 
                 if (receivedMessage != String.Empty)
                 {
@@ -168,7 +178,7 @@ namespace Computational_Node
                     if (GetMessageName(receivedMessage) == "SolvePartialProblems")
                     {
                         Trace.WriteLine("SolvePartialProblems message recognized");
-                        this.ProcessSolvePartialProblemsMessage(receivedMessage);
+                        this.AddPartialProblemToQueue(receivedMessage);
                     }
 
                     //Received unrecoginized message from CS
@@ -187,11 +197,11 @@ namespace Computational_Node
             }
         }
 
-        private void ProcessSolvePartialProblemsMessage(string receivedMessage)
+        private void AddPartialProblemToQueue(string receivedMessage)
         {
             var partialProblemMessage = this.DeserializeMessage<PartialProblemsMessage>(receivedMessage);
 
-            //Add PartialProblem to queue, it will be process by another Thread
+            //Add PartialProblem to queue, it will be process by processProblemsQueueThread
             lock (this.partialProblemsQueue)
             {
                 this.partialProblemsQueue.Enqueue(partialProblemMessage);
@@ -199,134 +209,56 @@ namespace Computational_Node
             }
         }
 
-        private void ProcessingThread()
+        private void ProblemsQueueProcessingThread()
         {
-            while (!this.processingThreadCancellationTokenSource.IsCancellationRequested)
+            while (!this.processingProblemsQueueThreadCancellationTokenSource.IsCancellationRequested)
             {
-                this.ProcessPartialProblemMessage();
-
-                this.ProcessSolutionsMessage();
-
+                lock (this.partialProblemsQueue)
+                {
+                    if (this.partialProblemsQueue.Count > 0)
+                    {
+                        Trace.WriteLine("\n\n[" + this.partialProblemsQueue.Count + "] problems in queue\n\n");
+                        this.SolvePartialProblemsMessage(this.partialProblemsQueue.Dequeue());
+                    }
+                }
                 //Sleep for the period of time given by CS
                 Thread.Sleep(4000);
             }
         }
 
-        private void ProcessPartialProblemMessage()
+
+        private void SolvePartialProblemsMessage(PartialProblemsMessage partialProblemsMessage)
         {
-            PartialProblemsMessage partialProblemMessage = null;
+            Trace.WriteLine("\n\nStarting solving problem id: " + partialProblemsMessage.Id);
 
-            lock (this.partialProblemsQueue)
-            {
-                //If there is PartialProblem waiting in queue, dequeue
-                if (this.partialProblemsQueue.Count > 0)
-                {
-                    Trace.WriteLine("\n\n["+this.partialProblemsQueue.Count +"] problems in queue\n\n");
-                    partialProblemMessage = this.partialProblemsQueue.Dequeue();
-                    Trace.WriteLine("\n\nPartialProblem removed from queue\n\n");
-                    Trace.WriteLine("\n\nStarting solving problem id: " + partialProblemMessage.Id);
-                    Thread solvePartialProblemThread = new Thread(() => SolvePartialProblem(partialProblemMessage));
-                    solvePartialProblemThread.Start();
-                }
-
-                //If there is NOT PartialProblem waiting in queue, return
-                else
-                {
-                    Trace.WriteLine("No PartialProblem in queue");
-                }
-            }
-        }
-
-        private void ProcessSolutionsMessage()
-        {
-            lock(this.partialSolutionsQueue)
-            {
-                //if(this.partialSolutionsQueue.Count > 0)
-                //{
-                //    SolutionsMessage solutionsMessage = this.partialSolutionsQueue.Dequeue();
-
-                //    //Connect to CS
-                //    socket = communicationModule.SetupClient();
-                //    communicationModule.Connect(socket);
-
-                //    //Send SolutionsMessage to CS
-                //    var messageString = this.SerializeMessage(solutionsMessage);
-                //    this.communicationModule.SendData(messageString, socket);
-
-                //    //Close connection
-                //    this.communicationModule.CloseSocket(socket);
-                //}
-                int i = 0;
-                int counter = 0;
-                while(this.solutionsMessages.Count > 0 && i < this.solutionsMessages.Count)
-                {
-
-                    foreach (var solution in solutionsMessages[i].Solutions)
-                    {
-                        if(solution != null && solution.Type == SolutionType.Partial)
-                        {
-                            counter++;
-                        }
-                    }
-                    Trace.WriteLine("\n\n " + counter + "/" + solutionsMessages[i].Solutions.Length + " subproblems of partialProblem are solved");
-
-                    if(counter == solutionsMessages[i].Solutions.Length)
-                    {
-                        Trace.WriteLine("\n\n ALL Subproblems of partialProblem ARE solved\n\n");
-
-                        //Connect to CS
-                        finalSocket = communicationModule.SetupClient();
-                        communicationModule.Connect(finalSocket);
-
-                        //Send SolutionsMessage to CS
-                        var messageString = this.SerializeMessage(this.solutionsMessages[i]);
-                        this.communicationModule.SendData(messageString, finalSocket);
-
-                        //Close connection
-                        this.communicationModule.CloseSocket(finalSocket);
-
-                        this.solutionsMessages.RemoveAt(i);
-                    }
-                    else
-                    {
-                        counter = 0;
-                    }
-                    i++;
-
-                }
-            }
-        }
-
-        private void SolvePartialProblem(PartialProblemsMessage partialProblemMessage)
-        {
             //All PartialProblems which were sent in single PartialProblemsMessage
-            Queue<SolvePartialProblemsPartialProblem> q = new Queue<SolvePartialProblemsPartialProblem>(partialProblemMessage.PartialProblems);
-            Trace.WriteLine("\n\nSOLVING ["+ q.Count +"]subproblems of PartialProblem\n\n");
+            Queue<SolvePartialProblemsPartialProblem> q = new Queue<SolvePartialProblemsPartialProblem>(partialProblemsMessage.PartialProblems);
+            Trace.WriteLine("\n\nSOLVING "+ q.Count +" subproblems of PartialProblem\n\n");
 
-            TaskSolverDVRP taskSolverDvrp = new TaskSolverDVRP(partialProblemMessage.CommonData);
+            TaskSolverDVRP taskSolverDvrp = new TaskSolverDVRP(partialProblemsMessage.CommonData);
 
-            SolutionsMessage solutionMessage = new SolutionsMessage()
+            SolutionsMessage solutionsMessage = new SolutionsMessage()
                 {
-                    CommonData = partialProblemMessage.CommonData,
-                    Id = partialProblemMessage.Id,
-                    ProblemType = partialProblemMessage.ProblemType,
+                    CommonData = partialProblemsMessage.CommonData,
+                    Id = partialProblemsMessage.Id,
+                    ProblemType = partialProblemsMessage.ProblemType,
                     Solutions = new Solution[q.Count],
                 };
-            lock ((this.solutionsMessages))
+
+            lock ((this.solutionsMessagesList))
             {
-                this.solutionsMessages.Add(solutionMessage);
+                this.solutionsMessagesList.Add(solutionsMessage);
             }
 
             int idleThreadIndex;
-
             while (q.Count > 0)
             {
                 lock (this.statusOfComputingThreads)
                 {
                     //Get index number of the idle thread, which can compute
                     idleThreadIndex = this.GetIdleThreadIndex();
-
                 }
+
                 //If there is no idle thread, wait and try again
                 if (idleThreadIndex == -1)
                 {
@@ -335,72 +267,23 @@ namespace Computational_Node
 
                 else
                 {
-                    lock (this.statusOfComputingThreads)
-                    {
-                        this.statusOfComputingThreads[idleThreadIndex].ProblemInstanceId =
-                            partialProblemMessage.Id;
+                    SolvePartialProblemsPartialProblem problem = q.Dequeue();
 
-                        this.statusOfComputingThreads[idleThreadIndex].ProblemType =
-                            partialProblemMessage.ProblemType;
+                    this.statusOfComputingThreads[idleThreadIndex].ProblemInstanceId =
+                        partialProblemsMessage.Id;
 
-                        this.statusOfComputingThreads[idleThreadIndex].TaskId =
-                            q.Peek().TaskId;
-                    }
-                    var prob = q.Dequeue();
+                    this.statusOfComputingThreads[idleThreadIndex].ProblemType =
+                        partialProblemsMessage.ProblemType;
+
+                    this.statusOfComputingThreads[idleThreadIndex].TaskId =
+                        problem.TaskId;
+
                     this.computingThreads[idleThreadIndex] = new Thread(() => 
-                        this.Solve(prob, idleThreadIndex, taskSolverDvrp, 
-                        (int)partialProblemMessage.SolvingTimeout, partialProblemMessage.Id));
+                        this.Solve(problem, idleThreadIndex, taskSolverDvrp, 
+                        (int)partialProblemsMessage.SolvingTimeout, partialProblemsMessage.Id));
 
                     this.computingThreads[idleThreadIndex].Start();
                 }
-            }
-        }
-
-        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id)
-        {
-            //TODO Timer dla wątku do StatusThread.HowLong
-
-            Solution solution = new Solution()
-                {
-                    ComputationsTime = 0,
-                    Data = null,
-                    TaskId = partialProblem.TaskId,
-                    TaskIdSpecified = (int)partialProblem.TaskId < 0 ? false : true,
-                    TimeoutOccured = false,
-                    Type = SolutionType.Ongoing
-                };
-
-            Trace.WriteLine("\n\nSolving subproblem id " + partialProblem.TaskId +" on thread "+threadNumber+"\n\n");
-            //solution.ComputationsTime = 
-            solution.Data = taskSolverDvrp.Solve(partialProblem.Data, new TimeSpan(0,0,solvingTimeout));
-            //solution.TimeoutOccured =
-            solution.Type = SolutionType.Partial;
-            Trace.WriteLine("\n\nSolved subproblem id: " + partialProblem.TaskId + "\n\n");
-
-            lock (this.solutionsMessages)
-            {
-                for (int j = solutionsMessages.Count - 1; j >= 0; j--)
-                {
-                    if (solutionsMessages[j].Id == id)
-                    {
-                        solutionsMessages[j].Solutions[partialProblem.TaskId] = solution;
-                        Trace.WriteLine("\n\n Subproblem id: " + partialProblem.TaskId + " waits for complete solution\n\n");
-                        break;
-                    }
-                    
-                    //lock (this.partialSolutionsQueue)
-                    //{
-                    //    this.partialSolutionsQueue.Enqueue(solutionsMessage);
-                    //}
-                    //this.solutionsMessages.RemoveAt(j);
-                }
-            }
-            //_logger.Debug("Solved problem: " + solution.TaskId);
-
-            lock (this.statusOfComputingThreads)
-            {
-                this.statusOfComputingThreads[threadNumber].State = StatusThreadState.Idle;
-                this.statusOfComputingThreads[threadNumber].TaskIdSpecified = false;
             }
         }
 
@@ -418,6 +301,110 @@ namespace Computational_Node
 
             //If there is no idle computing thread
             return -1;
+        }
+
+        private void Solve(SolvePartialProblemsPartialProblem partialProblem, int threadNumber, TaskSolverDVRP taskSolverDvrp, int solvingTimeout, ulong id)
+        {
+            //TODO Timer dla wątku do StatusThread.HowLong
+
+            Solution solution = new Solution()
+            {
+                ComputationsTime = 0,
+                Data = null,
+                TaskId = partialProblem.TaskId,
+                TaskIdSpecified = (int)partialProblem.TaskId < 0 ? false : true,
+                TimeoutOccured = false,
+                Type = SolutionType.Ongoing
+            };
+
+            Trace.WriteLine("\n\nSolving subproblem id " + partialProblem.TaskId + " on thread " + threadNumber + "\n\n");
+            //solution.ComputationsTime = 
+            solution.Data = taskSolverDvrp.Solve(partialProblem.Data, new TimeSpan(0, 0, solvingTimeout));
+            //solution.TimeoutOccured =
+            solution.Type = SolutionType.Partial;
+            Trace.WriteLine("\n\nSolved subproblem id: " + partialProblem.TaskId + "\n\n");
+
+            lock (this.solutionsMessagesList)
+            {
+                for (int i = 0; i < this.solutionsMessagesList.Count; ++i)
+                {
+                    if (this.solutionsMessagesList[i].Id == id)
+                    {
+                        for (int j = 0; j < this.solutionsMessagesList[i].Solutions.Length; j++)
+                        {
+                            if(this.solutionsMessagesList[i].Solutions[j] == null)
+                                this.solutionsMessagesList[i].Solutions[j] = solution;
+                        }
+                        Trace.WriteLine("\n\n Subproblem id: " + partialProblem.TaskId + " waits for complete solution\n\n");
+                        break;
+                    }
+                }
+            }
+            _logger.Debug("Solved problem: " + solution.TaskId);
+
+            lock (this.statusOfComputingThreads)
+            {
+                this.statusOfComputingThreads[threadNumber].State = StatusThreadState.Idle;
+            }
+        }
+
+
+        private void SolutionsQueueProcessingThread()
+        {
+            while (!this.processingSolutionsQueueThreadCancellationTokenSource.IsCancellationRequested)
+            {
+                lock (this.solutionsMessagesList)
+                {
+                    if (this.solutionsMessagesList.Count > 0)
+                    {
+                        this.SolutionsProcessingThread();
+                    }
+                }
+                
+                //Sleep for the period of time given by CS
+                Thread.Sleep(4000);
+            }
+        }
+
+        private void SolutionsProcessingThread()
+        {
+            int i = 0;
+            int counter = 0;
+            while (i < this.solutionsMessagesList.Count)
+            {
+
+                foreach (var solution in solutionsMessagesList[i].Solutions)
+                {
+                    if (solution != null && solution.Type == SolutionType.Partial)
+                    {
+                        counter++;
+                    }
+                }
+                Trace.WriteLine("\n\n " + counter + "/" + solutionsMessagesList[i].Solutions.Length + " subproblems of partialProblem are solved");
+
+                if (counter == solutionsMessagesList[i].Solutions.Length)
+                {
+                    Trace.WriteLine("\n\n ALL Subproblems of partialProblem ARE solved\n\n");
+
+                    //Connect to CS
+                    this.solutionsSocket = this.communicationModule.SetupClient();
+                    this.communicationModule.Connect(solutionsSocket);
+
+                    //Send SolutionsMessage to CS
+                    var messageString = this.SerializeMessage(this.solutionsMessagesList[i]);
+                    this.communicationModule.SendData(messageString, solutionsSocket);
+
+                    //Close connection
+                    this.communicationModule.CloseSocket(solutionsSocket);
+
+                    this.solutionsMessagesList.RemoveAt(i);
+                }
+                else
+                {
+                    counter = 0;
+                }
+                i++;
+            }
         }
     }
 }

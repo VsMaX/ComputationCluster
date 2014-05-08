@@ -16,7 +16,8 @@ namespace Computational_Node
             var node = new ComputationalNode("127.0.0.1", 5555, 5000);
             if (node.RegisterAtServer())
             {
-                node.StartQueueProcessingThread();
+                node.StartProblemsQueueProcessingThread();
+                node.StartSolutionsQueueProcessingThread();
                 node.StartSendingStatusThread();
             }
 
