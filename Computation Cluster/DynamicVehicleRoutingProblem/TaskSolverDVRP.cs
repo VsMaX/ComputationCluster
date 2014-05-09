@@ -55,7 +55,7 @@ namespace DynamicVehicleRoutingProblem
 
 
             Trace.WriteLine(subsets.Count().ToString());
-            int size = subsets.Count() / (threadCount -1);
+            int size = subsets.Count() / (threadCount);
             Trace.WriteLine(size.ToString());
             int[][] res = new int[threadCount][];
             int indeks = 0;
