@@ -443,11 +443,15 @@ namespace Computational_Server
 
             if (solveRequest != null)
             {
-                int activeNodeCount = 1;
+                int activeNodeCount = 0;
                 
                 lock (activeNodes)
                 {
-                    activeNodeCount = activeNodes.Count;
+                    foreach (var activeNode in this.activeNodes)
+                    {
+                        if (activeNode.Value.Type == RegisterType.ComputationalNode) 
+                            activeNodeCount++;
+                    }
                 }
 
                 divideProblemMessage = new DivideProblemMessage()
