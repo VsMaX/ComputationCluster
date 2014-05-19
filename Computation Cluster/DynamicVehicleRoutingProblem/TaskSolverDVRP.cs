@@ -1,5 +1,4 @@
-﻿using Communication_Library;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,7 +19,7 @@ namespace DynamicVehicleRoutingProblem
             : base(problemData)
         {
             this._problemData = problemData;
-            this.Dvrp = DVRPHelper.Parse(CommunicationModule.ConvertDataToString(problemData, problemData.Length));
+            this.Dvrp = DVRPHelper.Parse(ConvertDataToString(problemData, problemData.Length));
             this.comb = DVRPHelper.GetAllCombination(Dvrp.ClientID.Length + 1);
         }
 
@@ -82,7 +81,7 @@ namespace DynamicVehicleRoutingProblem
                     }
                 }
                 wpisane += size;
-                result[i - 1] = CommunicationModule.ConvertStringToData(Client.ClientsToString(tab, indeks));
+                result[i - 1] = ConvertStringToData(Client.ClientsToString(tab, indeks));
                 indeks++;
             }
 
@@ -118,7 +117,7 @@ namespace DynamicVehicleRoutingProblem
 
             for (int i = 0; i < solutions.Length; i++)
             {
-                DVRPPartialSolution sol = DVRPPartialSolution.Parse(CommunicationModule.ConvertDataToString(solutions[i], solutions[i].Length), Dvrp);
+                DVRPPartialSolution sol = DVRPPartialSolution.Parse(ConvertDataToString(solutions[i], solutions[i].Length), Dvrp);
                 ps[sol.NodeNumber] = sol;
             }
 
@@ -167,7 +166,7 @@ namespace DynamicVehicleRoutingProblem
             //DVRPSolution solution  = new DVRPSolution(0, ps[bestsolNode].PartialPathLen[bestsolInd], ps[bestsolNode].PartialPaths[bestsolInd], ps[bestsolNode].PartialPathsArrivalsTimes[bestsolInd]);
             DVRPPartialSolution solution = new DVRPPartialSolution(bestsolNode, bestsolInd, ps, bestLen);
             string StringSol = DVRPPartialSolution.SolutionToString(solution);
-            this.Solution = CommunicationModule.ConvertStringToData(StringSol);
+            this.Solution = ConvertStringToData(StringSol);
         }
             //foreach (var part in GetAllPartitions<int>(Dvrp.ClientID))
             //{
@@ -230,7 +229,25 @@ namespace DynamicVehicleRoutingProblem
                 solString += solution.ToString();
                 solString += DVRPPartialSolution.ArrayToString(pd2s.partial[set]);
             }
-            return CommunicationModule.ConvertStringToData(solString);
+            return ConvertStringToData(solString);
+        }
+
+        public static string ConvertDataToString(byte[] buffer, int bytesRead)
+        {
+            if (bytesRead > 0)
+            {
+                return Encoding.UTF8.GetString(buffer, 0,
+                        bytesRead);
+                //message = message.Replace("\0", String.Empty);
+                //message = message.Trim();
+                //return message;
+            }
+            return String.Empty;
+        }
+
+        public static byte[] ConvertStringToData(string response)
+        {
+            return Encoding.UTF8.GetBytes(response);
         }
 
         #region PARTITION OF PROBLEM
