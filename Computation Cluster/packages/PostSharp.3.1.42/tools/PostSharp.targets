@@ -482,7 +482,7 @@
     <Exec Command="&quot;$(MSbuildThisFileDirectory)PostSharp-Tools.exe&quot; -o&quot;$(_PostSharpExtractDirectory)&quot; -y"/>
   </Target>
 
-  <Target Name="PostSharp30ChangeAppConfig" DependsOnTargets="CopyFilesToOutputDirectory" Condition="'$(OutputType)'=='exe' OR '$(OutputType)'=='winexe'">
+  <Target Name="PostSharp30ChangeAppConfig" DependsOnTargets="CopyFilesToOutputDirectory" Condition="( '$(OutputType)'=='exe' OR '$(OutputType)'=='winexe' ) AND '$(PostSharpChangeAppConfigDisabled)' == 'False'">
     <PostSharp30ChangeAppConfig ConfigFile="$(OutDir)$(TargetFileName).config" Version="$(PostSharp30Version).9"/>
   </Target>
 
