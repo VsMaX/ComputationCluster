@@ -1,0 +1,23 @@
+
+    Tworzenie instancji taskSolvera w TaskManagerze przy otrzymaniu wiadomoœci DivideProblem. W konstruktorze przekazujemy dane dane wejœciowe.
+    Plugin.TaskSolverDVRP taskSolver = new Plugin.TaskSolverDVRP(divideProblemFromServer.Data);
+    byte[][] b = taskSolver.DivideProblem(2);
+     
+    Tworzenie instancji taskSolvera w TaskManagerze przy otrzymaniu wiadomoœci Solutions.
+    byte[][] finalSolution = new byte[solutionsFromServer.Solutions1.Length][];
+    for (int i = 0; i < finalSolution.Length; i++)
+    {
+            finalSolution[i] = solutionsFromServer.Solutions1[i].Data;
+    }
+    Plugin.TaskSolverDVRP  taskSolver = new TaskSolverDVRP(null);
+    taskSolver.MergeSolution(finalSolution);
+     
+    Tworzenie instancji taskSolvera w ComputationalNode przy otrzymaniu wiadomoœci SolvePartialProblem. W konstruktorze przekazujemy dane dane wejœciowe.
+    Plugin.TaskSolverDVRP taskSolver = new Plugin.TaskSolverDVRP(solvePartialProblemsFromTaskManager.CommonData);
+    byte[] solveResult = taskSolver.Solve(
+                    solvePartialProblemsFromTaskManager.PartialProblems[0].Data,
+                    solvePartialProblemsFromTaskManager.SolvingTimeoutSpecified
+                        ? new TimeSpan((long)solvePartialProblemsFromTaskManager.SolvingTimeout)
+                        : new TimeSpan()
+                    );
+
