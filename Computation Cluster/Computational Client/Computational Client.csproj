@@ -37,9 +37,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Communication Library, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Communication Library\bin\Debug\Communication Library.dll</HintPath>
+    </Reference>
     <Reference Include="log4net, Version=1.2.13.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Plugin">
+      <HintPath>..\..\dllfelis\Plugin.dll</HintPath>
     </Reference>
     <Reference Include="PostSharp, Version=3.1.42.9, Culture=neutral, PublicKeyToken=b13fd38b8f9c99d7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -107,16 +114,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Communication Library\Communication Library.csproj">
-      <Project>{B4EFF6FE-DB52-4ECD-AC63-BEE465E5BB66}</Project>
-      <Name>Communication Library</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DynamicVehicleRoutingProblem\DynamicVehicleRoutingProblem.csproj">
-      <Project>{2dd11613-1976-491d-a777-b47fa80b91f4}</Project>
-      <Name>DynamicVehicleRoutingProblem</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />

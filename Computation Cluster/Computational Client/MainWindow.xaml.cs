@@ -78,6 +78,7 @@ namespace Computational_Client
             SolutionsMessage sm = null;
             String message = String.Empty;
             double len = 0;
+            string ttt;
 
             while (sm == null)
             {
@@ -97,8 +98,14 @@ namespace Computational_Client
                                 if (solution.Type == SolutionType.Final)
                                 {
                                     //str = "\n\nFinal solution: " + System.Text.Encoding.UTF8.GetString(solution.Data);
-                                    len = DynamicVehicleRoutingProblem.DVRPPartialSolution.Parse2FinalSolLenght(System.Text.Encoding.UTF8.GetString(solution.Data));
-                                    this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "\n\n Path lenght: " + len.ToString() });
+                                    //len = DynamicVehicleRoutingProblem.DVRPPartialSolution.Parse2FinalSolLenght(System.Text.Encoding.UTF8.GetString(solution.Data));
+
+                                    DVRP.Solutions.FinalSolution finalSolution
+                                        = (DVRP.Solutions.Solution.ToSolution(solution.Data)).ToFinalSolution();
+
+                                    ttt = finalSolution.ToString();
+
+                                    this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "\n\n Path lenght: " + ttt });
                                     this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "\n SOLVED!!! \n SOLVED!!!"});
                                     break;
                                 }

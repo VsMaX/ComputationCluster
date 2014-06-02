@@ -8,6 +8,7 @@ using System.Text;
 using Communication_Library;
 using System.Windows.Controls;
 
+
 namespace Computational_Client
 {
     public class ComputationClient : IDisposable

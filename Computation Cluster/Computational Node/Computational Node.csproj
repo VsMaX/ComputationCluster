@@ -39,6 +39,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
     </Reference>
+    <Reference Include="Plugin">
+      <HintPath>..\..\dllfelis\Plugin.dll</HintPath>
+    </Reference>
     <Reference Include="PostSharp">
       <HintPath>..\packages\PostSharp.3.1.42\lib\net20\PostSharp.dll</HintPath>
       <Private>True</Private>
@@ -70,10 +73,6 @@
     <ProjectReference Include="..\Communication Library\Communication Library.csproj">
       <Project>{B4EFF6FE-DB52-4ECD-AC63-BEE465E5BB66}</Project>
       <Name>Communication Library</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DynamicVehicleRoutingProblem\DynamicVehicleRoutingProblem.csproj">
-      <Project>{2dd11613-1976-491d-a777-b47fa80b91f4}</Project>
-      <Name>DynamicVehicleRoutingProblem</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

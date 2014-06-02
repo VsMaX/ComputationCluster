@@ -18,9 +18,12 @@ namespace DynamicVehicleRoutingProblem
         public TaskSolverDVRP(byte[] problemData)
             : base(problemData)
         {
-            this._problemData = problemData;
-            this.Dvrp = DVRPHelper.Parse(ConvertDataToString(problemData, problemData.Length));
-            this.comb = DVRPHelper.GetAllCombination(Dvrp.ClientID.Length + 1);
+            if (problemData.Length > 0 && problemData != null)
+            {
+                this._problemData = problemData;
+                this.Dvrp = DVRPHelper.Parse(ConvertDataToString(problemData, problemData.Length));
+                this.comb = DVRPHelper.GetAllCombination(Dvrp.ClientID.Length + 1);
+            }
         }
 
         public override byte[][] DivideProblem(int threadCount)

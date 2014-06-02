@@ -21,3 +21,7 @@
                         : new TimeSpan()
                     );
 
+
+
+DVRP.Solutions.FinalSolution finalSolution = (DVRP.Solutions.Solution.ToSolution(solutions.Solutions1[0].Data)).ToFinalSolution();                
+                Console.WriteLine("RESULT: " + finalSolution.ToString());
