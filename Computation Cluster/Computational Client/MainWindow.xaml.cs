@@ -100,6 +100,9 @@ namespace Computational_Client
                                     len = DynamicVehicleRoutingProblem.DVRPPartialSolution.Parse2FinalSolLenght(System.Text.Encoding.UTF8.GetString(solution.Data));
                                     this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "\n\n Path lenght: " + len.ToString() });
                                     this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { "\n SOLVED!!! \n SOLVED!!!"});
+                                    this.computationalClient.sw.Stop();
+                                    this.potwierdzenie.Dispatcher.Invoke(new UpdateTextCallback(this.UpdateText), new object[] { String.Format("Solution time: {0}", this.computationalClient.sw.ElapsedMilliseconds) });
+                                    this.computationalClient.sw.Reset();
                                     break;
                                 }
                             }

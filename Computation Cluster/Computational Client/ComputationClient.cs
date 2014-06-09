@@ -15,6 +15,7 @@ namespace Computational_Client
         byte[] bytes = new byte[1024];
         private ICommunicationModule communicationModule;
         private Socket clientSocket;
+        public Stopwatch sw;
 
         public ComputationClient(string ip, int port, int receiveTimeout)
         {
@@ -30,7 +31,7 @@ namespace Computational_Client
 
                 var serializer = new ComputationSerializer<SolveRequestMessage>();
                 var message = serializer.Serialize(solveRequestMessage);
-                
+                sw.Start();
                 communicationModule.SendData(message, clientSocket);
 
                 var response = communicationModule.ReceiveData(clientSocket);
